@@ -1,0 +1,33 @@
+- name: MokManager warning
+  ansible.builtin.debug:
+    msg: |
+      A new Machine Owner Key (MOK) was enrolled. Before this playbook can
+      continue, the import will need to be manually validated in a program
+      called MokManager. This will happen automatically when the machine is
+      rebooted, but requires an administrator with access to a local console.
+
+      MokManager is very easy to use. Once in the menu select "Enroll MOK,"
+      enter the same password you just provided, and reboot. This playbook
+      will resume when the host is back online, or will automatically fail
+      after ten minutes. If something strange happens, just run the play
+      again.
+
+- name: Reboot prompt
+  vars_prompt:
+    - name: ready_to_reboot
+      prompt: Are you ready to reboot now (y/n)?
+      private: false
+  ansible.builtin.reboot:
+  when: reaady_to_reboot == 'y' or ready_to_reboot == 'Y'
+  notify:
+    - Reboot denied
+
+- name: Reboot denied
+  ansible.builtin.debug:
+    msg: |
+      You have chosen not to reboot. Your keys and configuration files are
+      still in place, so MokManager will still appear on the next reboot.
+      If you changed your mind, your next boot may take a little longer as
+      you wait for the MokManager screen to time out. Even so, no further
+      action is required. If you still plan to enroll your MOK, either run
+      this play again later or reboot yourself.
