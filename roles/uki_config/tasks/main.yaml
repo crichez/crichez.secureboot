@@ -61,7 +61,8 @@
           - "{{ uki_config_kernel_install_config_root }}/MOK.crt"
           - -out
           - "{{ uki_config_kernel_install_config_root }}/MOK.cer"
-          - -outform DER
+          - -outform
+          - DER
         creates:
           - "{{ uki_config_kernel_install_config_root }}/MOK.cer"
 
