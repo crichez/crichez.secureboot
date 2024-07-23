@@ -1,11 +1,20 @@
-- name: Install required packages
-  ansible.builtin.dnf:
-    name:
-      - binutils
-      - sbsigntools
-      - systemd-boot
-      - openssl
+- name: Install dependencies
   become: true
+  block:
+    - name: Install required packages
+      ansible.builtin.dnf:
+        name:
+          - binutils
+          - sbsigntools
+          - systemd-boot
+          - openssl
+          - python3-pip
+          - python3-virtualenv
+          - python3-setuptools
+
+    - name: Install python libraries
+      ansible.builtin.pip:
+        name: pexpect
 
 - name: Create Machine Owner Keys
   become: true
