@@ -12,8 +12,8 @@
   block:
     - name: Create private key and certificate # noqa inline-env-var
       ansible.builtin.command:
-        cmd: openssl
         argv:
+          - openssl
           - req
           - -new
           - -x509
@@ -54,8 +54,8 @@
 
     - name: Derive public certificate # noqa inline-env-var
       ansible.builtin.command:
-        cmd: openssl
         argv:
+          - openssl
           - x509
           - -in
           - "{{ uki_config_kernel_install_config_root }}/MOK.crt"
