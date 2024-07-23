@@ -1,0 +1,6 @@
+- name: Configure UKIs for secure boot
+  hosts: test
+
+  roles:
+    - role: uki_config
+      uki_config_mok_name: tofugarden
