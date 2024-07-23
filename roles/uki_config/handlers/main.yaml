@@ -13,21 +13,15 @@
       again.
 
 - name: Reboot prompt
-  vars_prompt:
-    - name: ready_to_reboot
-      prompt: Are you ready to reboot now (y/n)?
-      private: false
-  ansible.builtin.reboot:
-  when: reaady_to_reboot == 'y' or ready_to_reboot == 'Y'
+  ansible.builtin.pause:
+    prompt: Ready to reboot? (y/n)
+    echo: false
+  register: reboot_prompt
+  changed_when: reboot_prompt == 'y' or reboot_prompt == 'Y'
+  failed_when: reboot_prompt != 'y' or reboot_prompt != 'Y'
   notify:
-    - Reboot denied
+    - Reboot
 
-- name: Reboot denied
-  ansible.builtin.debug:
-    msg: |
-      You have chosen not to reboot. Your keys and configuration files are
-      still in place, so MokManager will still appear on the next reboot.
-      If you changed your mind, your next boot may take a little longer as
-      you wait for the MokManager screen to time out. Even so, no further
-      action is required. If you still plan to enroll your MOK, either run
-      this play again later or reboot yourself.
+- name: Reboot
+  ansible.builtin.reboot:
+  become: true

@@ -75,23 +75,29 @@
         serole: object_r
         setype: etc_t
 
-- name: Import MOK
-  become: true
-  vars_prompt:
-    - name: mok_password
-      prompt: 'Enter MOK password'
-      unsafe: true
+- name: Get MOK password
   vars:
     enrolled: "{{ lookup('ansible.builtin.pipe', 'mokutil --list-enrolled') }}"
     new: "{{ lookup('ansible.builtin.pipe', 'mokutil --list-new') }}"
+  register: mok_password_prompt
+  no_log: true
+  ansible.builtin.pause:
+    prompt: Enter MOK password
+    echo: false
+  when:
+    - enrolled | !ansible.builtin.search(uki_config_mok_name)
+    - new | !ansible.builtin.search(uki_config_mok_name)
+
+- name: Import MOK
+  become: true
   ansible.builtin.expect:
     command: mokutil --import {{ uki_config_kernel_install_config_root }}/MOK.cer
     responses:
-      .*: "{{ mok_password }}"
+      .*: "{{ mok_password_prompt.user_input }}"
   register: mok_import
   when:
-    - enrolled | ansible.builtin.search(uki_config_mok_name)
-    - new | ansible.builtin.search(uki_config_mok_name)
+    - enrolled | !ansible.builtin.search(uki_config_mok_name)
+    - new | !ansible.builtin.search(uki_config_mok_name)
   notify:
     - MokManager warning
     - Reboot prompt
