@@ -20,21 +20,19 @@
           - -newkey
           - rsa:2048
           - -keyout
-          - "{{ uki_config_kernel_install_config_root }}/MOK.key"
+          - "{{ uki_config_mok_key_path }}"
           - -out
-          - "{{ uki_config_kernel_install_config_root }}/MOK.crt"
+          - "{{ uki_config_mok_crt_path }}"
           - -nodes
           - -days
           - "3650"
           - -subj
           - "/CN={{ uki_config_mok_name }}/"
-        creates:
-          - "{{ uki_config_kernel_install_config_root }}/MOK.crt"
-          - "{{ uki_config_kernel_install_config_root }}/MOK.key"
+        creates: "{{ uki_config_kernel_install_config_root }}/MOK.*"
 
     - name: Set permissions on certificate
       ansible.builtin.file:
-        path: "{{ uki_config_kernel_install_config_root }}/MOK.crt"
+        path: "{{ uki_config_mok_crt_path }}"
         mode: '0600'
         owner: root
         group: root
@@ -44,7 +42,7 @@
 
     - name: Set permissions on private key
       ansible.builtin.file:
-        path: "{{ uki_config_kernel_install_config_root }}/MOK.key"
+        path: "{{ uki_config_mok_key_path }}"
         mode: '0600'
         owner: root
         group: root
@@ -58,17 +56,16 @@
           - openssl
           - x509
           - -in
-          - "{{ uki_config_kernel_install_config_root }}/MOK.crt"
+          - "{{ uki_config_mok_crt_path }}"
           - -out
-          - "{{ uki_config_kernel_install_config_root }}/MOK.cer"
+          - "{{ uki_config_mok_cer_path }}"
           - -outform
           - DER
-        creates:
-          - "{{ uki_config_kernel_install_config_root }}/MOK.cer"
+        creates: "{{ uki_config_mok_cer_path }}"
 
     - name: Set permissions on public cert
       ansible.builtin.file:
-        path: "{{ uki_config_kernel_install_config_root }}/MOK.cer"
+        path: "{{ uki_config_mok_cer_path }}"
         mode: '0644'
         owner: root
         group: root
@@ -76,32 +73,33 @@
         serole: object_r
         setype: etc_t
 
-- name: Get MOK password
+- name: Enroll MOK
   vars:
     enrolled: "{{ lookup('ansible.builtin.pipe', 'mokutil --list-enrolled') }}"
     new: "{{ lookup('ansible.builtin.pipe', 'mokutil --list-new') }}"
-  register: mok_password_prompt
-  no_log: true
-  ansible.builtin.pause:
-    prompt: Enter MOK password
-    echo: false
-  when:
-    - enrolled | !ansible.builtin.search(uki_config_mok_name)
-    - new | !ansible.builtin.search(uki_config_mok_name)
+  block:
+    - name: Get MOK password
+      register: mok_password_prompt
+      ansible.builtin.pause:
+        prompt: Enter MOK password
+        echo: false
+      when:
+        - enrolled is not ansible.builtin.search(uki_config_mok_name)
+        - new is not ansible.builtin.search(uki_config_mok_name)
 
-- name: Import MOK
-  become: true
-  ansible.builtin.expect:
-    command: mokutil --import {{ uki_config_kernel_install_config_root }}/MOK.cer
-    responses:
-      .*: "{{ mok_password_prompt.user_input }}"
-  register: mok_import
-  when:
-    - enrolled | !ansible.builtin.search(uki_config_mok_name)
-    - new | !ansible.builtin.search(uki_config_mok_name)
-  notify:
-    - MokManager warning
-    - Reboot prompt
+    - name: Import MOK
+      become: true
+      ansible.builtin.expect:
+        command: "mokutil --import {{ uki_config_mok_cer_path }}"
+        responses:
+          .*: "{{ mok_password_prompt.user_input }}"
+      register: mok_import
+      when:
+        - enrolled is not ansible.builtin.search(uki_config_mok_name)
+        - new is not ansible.builtin.search(uki_config_mok_name)
+      notify:
+        - MokManager warning
+        - Reboot prompt
 
 - name: Configure kernel-install to generate UKIs
   become: true
@@ -149,7 +147,7 @@
       community.general.ini_file:
         path: "{{ uki_config_dracut_conf_dir }}/uki.conf"
         option: uefi_secureboot_cert
-        value: "{{ uki_config_kernel_install_config_root }}/MOK.crt"
+        value: "{{ uki_config_mok_crt_path }}"
         mode: '0644'
         owner: root
         group: root
@@ -161,7 +159,7 @@
       community.general.ini_file:
         path: "{{ uki_config_dracut_conf_dir }}/uki.conf"
         option: uefi_secureboot_key
-        value: "{{ uki_config_kernel_install_config_root }}/MOK.key"
+        value: "{{ uki_config_mok_key_path }}"
         mode: '0644'
         owner: root
         group: root
