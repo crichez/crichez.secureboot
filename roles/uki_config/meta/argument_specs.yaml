@@ -1,0 +1,26 @@
+argument_specs:
+  main:
+    short_description: UKI Configuration
+    description: Configure kernel-install and dracut to build and sign UKIs
+    version_added: "0.0.1"
+    author: "Christopher Palmer-Richez (tofugarden)"
+    options:
+      uki_config_initrd_generator:
+        type: str
+        default: dracut
+
+      uki_config_uki_generator:
+        type: str
+        default: dracut
+
+      uki_config_kernel_install_config_root:
+        type: path
+        default: /etc/kernel
+
+      uki_config_dracut_conf_dir:
+        type: path
+        default: /etc/dracut.conf.d
+
+      uki_config_mok_name:
+        type: str
+        required: true
