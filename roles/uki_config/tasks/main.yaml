@@ -85,6 +85,7 @@
           - --list-enrolled
       register: enrolled_moks_request
       changed_when: false
+      become: true
 
     - name: Get new MOK list
       ansible.builtin.command:
@@ -93,6 +94,7 @@
           - --list-new
       register: new_moks_request
       changed_when: false
+      become: true
 
     - name: Validate enrolled MOKs
       vars:
@@ -149,6 +151,7 @@
           ansible.builtin.reboot:
 
         - name: Verify MOK was enrolled
+          become: true
           ansible.builtin.command:
             argv:
               - mokutil
