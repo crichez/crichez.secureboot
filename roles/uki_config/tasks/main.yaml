@@ -148,6 +148,15 @@
           become: true
           ansible.builtin.reboot:
 
+        - name: Verify MOK was enrolled
+          ansible.builtin.command:
+            argv:
+              - mokutil
+              - --list-enrolled
+          register: validate_mok_request
+          changed_when: false
+          failed_when: validate_mok_request.stdout is not ansible.builtin.search(uki_config_mok_name)
+
 - name: Configure kernel-install to generate UKIs
   become: true
   block:
