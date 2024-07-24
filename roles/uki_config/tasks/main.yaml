@@ -8,13 +8,7 @@
           - sbsigntools
           - systemd-boot
           - openssl
-          - python3-pip
-          - python3-virtualenv
-          - python3-setuptools
-
-    - name: Install python libraries
-      ansible.builtin.pip:
-        name: pexpect
+          - expect
 
 - name: Create Machine Owner Keys
   become: true
@@ -82,33 +76,77 @@
         serole: object_r
         setype: etc_t
 
-- name: Enroll MOK
-  vars:
-    enrolled: "{{ lookup('ansible.builtin.pipe', 'mokutil --list-enrolled') }}"
-    new: "{{ lookup('ansible.builtin.pipe', 'mokutil --list-new') }}"
+- name: Manage Machine Owner Keys
   block:
-    - name: Get MOK password
-      register: mok_password_prompt
-      ansible.builtin.pause:
-        prompt: Enter MOK password
-        echo: false
-      when:
-        - enrolled is not ansible.builtin.search(uki_config_mok_name)
-        - new is not ansible.builtin.search(uki_config_mok_name)
+    - name: Get current MOK list
+      ansible.builtin.command:
+        argv:
+          - mokutil
+          - --list-enrolled
+      register: enrolled_moks_request
+      changed_when: false
 
-    - name: Import MOK
-      become: true
-      ansible.builtin.expect:
-        command: "mokutil --import {{ uki_config_mok_cer_path }}"
-        responses:
-          .*: "{{ mok_password_prompt.user_input }}"
-      register: mok_import
+    - name: Get new MOK list
+      ansible.builtin.command:
+        argv:
+          - mokutil
+          - --list-new
+      register: new_moks_request
+      changed_when: false
+
+    - name: Validate enrolled MOKs
+      vars:
+        enrolled_moks: "{{ enrolled_moks_request.stdout }}"
+        new_moks: "{{ new_moks_request.stdout }}"
       when:
-        - enrolled is not ansible.builtin.search(uki_config_mok_name)
-        - new is not ansible.builtin.search(uki_config_mok_name)
-      notify:
-        - MokManager warning
-        - Reboot prompt
+        - enrolled_moks is not ansible.builtin.search(uki_config_mok_name)
+        - new_moks is not ansible.builtin.search(uki_config_mok_name)
+      block:
+        - name: Get MOK password
+          register: mok_password_prompt
+          ansible.builtin.pause:
+            prompt: Enter MOK password
+            echo: false
+
+        - name: Import MOK
+          become: true
+          ansible.builtin.shell:
+            cmd: |
+              spawn /usr/bin/mokutil --import {{ uki_config_mok_cer_path }}
+              expect "input password:"
+              send -- "{{ mok_password_prompt.user_input }}\n"
+              expect "input password again:"
+              send -- "{{ mok_password_prompt.user_input }}\n"
+              expect eof
+            executable: /usr/bin/expect
+          register: enroll_mok_request
+          changed_when: enroll_mok_request is not failed
+
+        - name: MokManager warning
+          ansible.builtin.debug:
+            msg: >
+              A new Machine Owner Key (MOK) was enrolled. Before this playbook can
+              continue, the import will need to be manually validated in a program
+              called MokManager. This will happen automatically when the machine is
+              rebooted, but requires an administrator with access to a local console.
+
+              MokManager is very easy to use. Once in the menu select "Enroll MOK,"
+              enter the same password you just provided, and reboot. This playbook
+              will resume when the host is back online, or will automatically fail
+              after ten minutes. If something strange happens, just run the play
+              again.
+
+        - name: Reboot prompt
+          ansible.builtin.pause:
+            prompt: Ready to reboot? (y/n)
+            echo: false
+          register: reboot_prompt
+          changed_when: false
+          failed_when: reboot_prompt.user_input != 'y'
+
+        - name: Reboot
+          become: true
+          ansible.builtin.reboot:
 
 - name: Configure kernel-install to generate UKIs
   become: true
