@@ -141,7 +141,7 @@
         - name: Reboot prompt
           ansible.builtin.pause:
             prompt: Ready to reboot? (y/n)
-            echo: false
+            echo: true
           register: reboot_prompt
           changed_when: false
           failed_when: reboot_prompt.user_input != 'y'
