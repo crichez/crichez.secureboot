@@ -1,4 +1,10 @@
 uki_config_initrd_generator: dracut
-uki_config_uki_generator: dracut
+uki_config_uki_generator:
+  ukify:
+    signing_tool:
+      sbsign:
+        private_key: /etc/kernel/MOK.priv
+        certificate: /etc/kernel/MOK.pem
+    cmdline: /etc/kernel/cmdline
 uki_config_kernel_install_config_root: /etc/kernel
 uki_config_dracut_conf_dir: /etc/dracut.conf.d

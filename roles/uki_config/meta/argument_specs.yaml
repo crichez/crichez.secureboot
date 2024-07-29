@@ -1,7 +1,7 @@
 argument_specs:
   main:
     short_description: UKI Configuration
-    description: Configure kernel-install and dracut to build and sign UKIs
+    description: Configure kernel-install to build and sign UKIs
     version_added: "0.0.1"
     author: "Christopher Palmer-Richez (tofugarden)"
     options:
@@ -10,8 +10,35 @@ argument_specs:
         default: dracut
 
       uki_config_uki_generator:
-        type: str
-        default: dracut
+        type: dict
+        description: The tool used to generate the UKI.
+        options:
+          ukify:
+            type: dict
+            description: The options needed by systemd-ukify to sign a UKI.
+            options:
+              cmdline:
+                type: path
+                description: The path to the kernel command line.
+                default: /etc/kernel/cmdline
+
+              signing_tool:
+                type: dict
+                description: The tool used to sign the UKI - sbsign.
+                options:
+                  sbsign:
+                    type: dict
+                    description: The options needed by sbsign.
+                    options:
+                      private_key:
+                        type: path
+                        description: The path to the signing certificate's private key.
+                        default: /etc/kernel/MOK.key
+
+                      certificate:
+                        type: path
+                        description: The path to the signing certificate.
+                        default: /etc/kernel/MOK.crt
 
       uki_config_kernel_install_config_root:
         type: path
