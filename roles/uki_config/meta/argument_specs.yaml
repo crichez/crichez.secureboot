@@ -33,12 +33,12 @@ argument_specs:
                       private_key:
                         type: path
                         description: The path to the signing certificate's private key.
-                        default: /etc/kernel/MOK.key
+                        default: /etc/kernel/MOK.priv
 
                       certificate:
                         type: path
                         description: The path to the signing certificate.
-                        default: /etc/kernel/MOK.crt
+                        default: /etc/kernel/MOK.pem
 
       uki_config_kernel_install_config_root:
         type: path
