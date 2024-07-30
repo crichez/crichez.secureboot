@@ -1,0 +1,7 @@
+- name: Rebuild UKI
+  ansible.builtin.command:
+    argv:
+      - kernel-install
+      - --verbose
+      - add
+  changed_when: true
