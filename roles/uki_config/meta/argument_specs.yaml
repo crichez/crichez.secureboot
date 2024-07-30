@@ -38,7 +38,21 @@ argument_specs:
                       certificate:
                         type: path
                         description: The path to the signing certificate.
-                        default: /etc/kernel/MOK.pem
+                        default: /etc/kernel/MOK.cer
+
+                  pesign:
+                    type: dict
+                    description: A dictionary of options needed by pesign.
+                    options:
+                      certificate_nickame:
+                        type: str
+                        required: true
+                        description: The nickname of the certificate used to sign UKIs.
+
+                      nss_database:
+                        type: path
+                        description: The path to the NSS database where the certificate is stored.
+                        default: /etc/pki/pesign
 
       uki_config_kernel_install_config_root:
         type: path
