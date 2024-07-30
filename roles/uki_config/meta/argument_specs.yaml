@@ -5,59 +5,69 @@ argument_specs:
     version_added: "0.0.1"
     author: "Christopher Palmer-Richez (tofugarden)"
     options:
-      uki_config_mok_setype:
-        type: str
-        default: cert_t
-        description: The SELinux type assigned to MOK certificate files.
-
       uki_config_initrd_generator:
         type: str
+        choices:
+          - dracut
         default: dracut
 
-      uki_config_uki_generator:
+      uki_config_mok:
         type: dict
-        description: The tool used to generate the UKI.
+        description: |
+          Location and information for your MOK.
+
+          Use this option to specify the path where the MOK certificate and
+          private key will be stored for UKI signing purposes.
         options:
-          ukify:
-            type: dict
-            description: The options needed by systemd-ukify to sign a UKI.
-            options:
-              cmdline:
-                type: path
-                description: The path to the kernel command line.
-                default: /etc/kernel/cmdline
+          private_key:
+            type: path
+            description: The path to the MOK private key.
+            default: /etc/kernel/MOK.priv
 
-              signing_tool:
-                type: dict
-                description: The tool used to sign the UKI - sbsign.
-                options:
-                  sbsign:
-                    type: dict
-                    description: The options needed by sbsign.
-                    options:
-                      private_key:
-                        type: path
-                        description: The path to the signing certificate's private key.
-                        default: /etc/kernel/MOK.priv
+          certificate:
+            type: path
+            description: The path to the MOK x509 certificate.
+            default: /etc/kernel/MOK.cer
+          
+          owner:
+            type: str
+            default: root
 
-                      certificate:
-                        type: path
-                        description: The path to the signing certificate.
-                        default: /etc/kernel/MOK.cer
+          group:
+            type: str
+            default: root
 
-                  pesign:
-                    type: dict
-                    description: A dictionary of options needed by pesign.
-                    options:
-                      certificate_nickame:
-                        type: str
-                        required: true
-                        description: The nickname of the certificate used to sign UKIs.
+          mode:
+            type: str
+            default: "0600"
 
-                      nss_database:
-                        type: path
-                        description: The path to the NSS database where the certificate is stored.
-                        default: /etc/pki/pesign
+          selevel:
+            type: str
+            default: s0
+
+          seuser:
+            type: str
+            default: system_u
+
+          serole:
+            type: str
+            default: object_r
+
+          setype:
+            type: str
+            default: cert_t
+
+      uki_config_cmdline:
+        type: path
+        description: The path to the kernel command line.
+        default: /etc/kernel/cmdline
+
+      uki_config_uki_generator:
+        type: str
+        description: The tool used to generate the UKI.
+        choices:
+          - ukify
+          - dracut
 
       uki_config_kernel_install_config_root:
         type: path
@@ -66,7 +76,3 @@ argument_specs:
       uki_config_dracut_conf_dir:
         type: path
         default: /etc/dracut.conf.d
-
-      uki_config_mok_name:
-        type: str
-        required: true

@@ -2,5 +2,3 @@
   hosts: test
   roles:
     - role: uki_config
-      vars:
-        uki_config_mok_name: test
