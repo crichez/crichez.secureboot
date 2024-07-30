@@ -5,6 +5,11 @@ argument_specs:
     version_added: "0.0.1"
     author: "Christopher Palmer-Richez (tofugarden)"
     options:
+      uki_config_mok_setype:
+        type: str
+        default: cert_t
+        description: The SELinux type assigned to MOK certificate files.
+
       uki_config_initrd_generator:
         type: str
         default: dracut

@@ -8,3 +8,4 @@ uki_config_uki_generator:
     cmdline: /etc/kernel/cmdline
 uki_config_kernel_install_config_root: /etc/kernel
 uki_config_dracut_conf_dir: /etc/dracut.conf.d
+uki_config_mok_setype: cert_t
