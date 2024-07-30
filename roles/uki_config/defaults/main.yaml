@@ -4,7 +4,7 @@ uki_config_uki_generator:
     signing_tool:
       sbsign:
         private_key: /etc/kernel/MOK.priv
-        certificate: /etc/kernel/MOK.pem
+        certificate: /etc/kernel/MOK.cer
     cmdline: /etc/kernel/cmdline
 uki_config_kernel_install_config_root: /etc/kernel
 uki_config_dracut_conf_dir: /etc/dracut.conf.d

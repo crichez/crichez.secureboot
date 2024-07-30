@@ -12,71 +12,74 @@
           - virt-firmware
           - uki-direct
 
-- name: Create MOK certificates
+- name: Gather keys and certificates
   become: true
   block:
-    - name: Create private key and certificate # noqa inline-env-var
-      ansible.builtin.command:
-        argv:
-          - openssl
-          - req
-          - -new
-          - -x509
-          - -newkey
-          - rsa:2048
-          - -keyout
-          - "{{ uki_config_mok_key_path }}"
-          - -out
-          - "{{ uki_config_mok_pem_path }}"
-          - -nodes
-          - -days
-          - "3650"
-          - -subj
-          - "/CN={{ uki_config_mok_name }}/"
-        creates: "{{ uki_config_kernel_install_config_root }}/MOK.priv"
+    - name: Configure certificates with openssl
+      when: uki_config_uki_generator.ukify
+      block:
+        - name: Create private key and certificate # noqa inline-env-var
+          ansible.builtin.command:
+            argv:
+              - openssl
+              - req
+              - -new
+              - -x509
+              - -newkey
+              - rsa:2048
+              - -keyout
+              - "{{ uki_config_mok_key_path }}"
+              - -out
+              - "{{ uki_config_mok_pem_path }}"
+              - -nodes
+              - -days
+              - "3650"
+              - -subj
+              - "/CN={{ uki_config_mok_name }}/"
+            creates: "{{ uki_config_kernel_install_config_root }}/MOK.priv"
 
-    - name: Set permissions on certificate
-      ansible.builtin.file:
-        path: "{{ uki_config_mok_pem_path }}"
-        mode: '0600'
-        owner: root
-        group: root
-        seuser: system_u
-        serole: object_r
-        setype: etc_t
+        - name: Set permissions on certificate
+          ansible.builtin.file:
+            path: "{{ uki_config_mok_pem_path }}"
+            mode: '0600'
+            owner: root
+            group: root
+            seuser: system_u
+            serole: object_r
+            setype: etc_t
 
-    - name: Set permissions on private key
-      ansible.builtin.file:
-        path: "{{ uki_config_mok_key_path }}"
-        mode: '0600'
-        owner: root
-        group: root
-        seuser: system_u
-        serole: object_r
-        setype: etc_t
+        - name: Set permissions on private key
+          ansible.builtin.file:
+            path: "{{ uki_config_mok_key_path }}"
+            mode: '0600'
+            owner: root
+            group: root
+            seuser: system_u
+            serole: object_r
+            setype: etc_t
 
-    - name: Derive public certificate # noqa inline-env-var
-      ansible.builtin.command:
-        argv:
-          - openssl
-          - x509
-          - -in
-          - "{{ uki_config_mok_pem_path }}"
-          - -out
-          - "{{ uki_config_mok_der_path }}"
-          - -outform
-          - DER
-        creates: "{{ uki_config_mok_der_path }}"
+        - name: Derive public certificate # noqa inline-env-var
+          ansible.builtin.command:
+            argv:
+              - openssl
+              - x509
+              - -in
+              - "{{ uki_config_mok_pem_path }}"
+              - -out
+              - "{{ uki_config_mok_der_path }}"
+              - -outform
+              - DER
+            creates: "{{ uki_config_mok_der_path }}"
 
-    - name: Set permissions on public cert
-      ansible.builtin.file:
-        path: "{{ uki_config_mok_der_path }}"
-        mode: '0644'
-        owner: root
-        group: root
-        seuser: system_u
-        serole: object_r
-        setype: etc_t
+        - name: Set permissions on public cert
+          ansible.builtin.file:
+            path: "{{ uki_config_mok_der_path }}"
+            mode: '0644'
+            owner: root
+            group: root
+            seuser: system_u
+            serole: object_r
+            setype: etc_t
 
 - name: Query MOK keyring
   ansible.builtin.command:
@@ -84,12 +87,12 @@
       - mokutil
       - -t
       - "{{ uki_config_mok_der_path }}"
-  changed_when: false
-  register: test_key_request
-  failed_when:
-    - test_key_request.stdout is not ansible.builtin.match('^.*\sis\snot\senrolled$')
-    - test_key_request.stdout is not ansible.builtin.match('^.*\sis\salready\sin\sthe\senrollment\srequest$')
-    - test_key_request.stdout is not ansible.builtin.match('^.*\sis\salready\senrolled$')
+    changed_when: false
+    register: test_key_request
+    failed_when:
+      - test_key_request.stdout is not ansible.builtin.match('^.*\sis\snot\senrolled$')
+      - test_key_request.stdout is not ansible.builtin.match('^.*\sis\salready\sin\sthe\senrollment\srequest$')
+      - test_key_request.stdout is not ansible.builtin.match('^.*\sis\salready\senrolled$')
 
 - name: Import new MOK
   when: test_key_request.rc == 0
