@@ -1,4 +1,3 @@
 uki_config_mok_pem_path: "{{ uki_config_kernel_install_config_root }}/MOK.cer"
 uki_config_mok_key_path: "{{ uki_config_kernel_install_config_root }}/MOK.priv"
 uki_config_mok_der_path: "{{ uki_config_kernel_install_config_root }}/MOK.der"
-uki_config_rebuild: false
