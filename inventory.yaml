@@ -1,5 +1,0 @@
-test:
-  hosts:
-    test.chorkychonker.chorky.net:
-      ansible_host: "192.168.0.20"
-      remote_user: tofugarden
