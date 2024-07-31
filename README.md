@@ -101,7 +101,7 @@ keep it under `/usr/lib/kernel` and `/usr/lib/dracut` respectively.
 
 ### MOK Information
 
-By default, a MOK is created at the path specified under `private_key` and `certifcate` if
+By default, a MOK is created at the path specified under `private_key` and `certificate` if
 an adequate key/certificate pair does not already exist at that path. If you wish to bring
 your own MOK instead of generating a new one for each host, either write your files to the
 default paths, or provide custom paths.
