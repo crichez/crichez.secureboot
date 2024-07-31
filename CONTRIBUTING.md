@@ -7,7 +7,7 @@ case, this document will help you get started.
 
 ### I'm having issues using the role(s), but I'm not sure I'm doing it right
 
-Open a discussion! You may ervy well have unconvered a bug or missing
+Open a discussion! You may very well have unconvered a bug or missing
 documentation, and we can file an issue on your behalf and get to work.
 
 ### I'm having issues using the role, and I'm pretty sure something is wrong
@@ -39,7 +39,7 @@ your use case is in scope for the project before opening an issue or PR.
 ### My question isn't covered here
 
 Open a discussion post! Please tell us what you want to accomplish, and
-we can figure out the best way to go about it together,
+we can figure out the best way to go about it together.
 
 
 Thanks!
