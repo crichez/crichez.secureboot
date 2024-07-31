@@ -132,131 +132,210 @@
       changed_when: false
       failed_when: validate_mok_request.rc == 0
 
-- name: Configure kernel-install to generate UKIs
+- name: Get a temporary directory to store backup paths for error handlers
+  ansible.builtin.tempfile:
+    state: directory
+  register: backup_dir
+  delegate_to: localhost
+
+- name: Configure kernel-install to generate and sign UKIs
   become: true
-  notify:
-    - Rebuild UKI
+  vars:
+    install_conf_path: "{{ uki_config_kernel_install_config_root }}/install.conf"
+    ukify_conf_path: "{{ uki_config_kernel_install_config_root }}/uki.conf"
+    dracut_conf_path: "{{ uki_config_dracut_conf_dir }}/uki.conf"
   block:
-    - name: Set the install layout to UKI
-      community.general.ini_file:
-        path: "{{ uki_config_kernel_install_config_root }}/install.conf"
-        option: layout
-        value: uki
-        mode: '0644'
-        owner: root
-        group: root
-        seuser: system_u
-        serole: object_r
-        setype: etc_t
+    - name: Configure kernel-install to generate UKIs
+      block:
+        - name: Save the original file
+          ansible.builtin.fetch:
+            src: "{{ install_conf_path }}"
+            dest: "{{ backup_dir.path }}"
+            fail_on_missing: false
 
-    - name: Configure kernel-install to use the requested initrd generator
-      community.general.ini_file:
-        path: "{{ uki_config_kernel_install_config_root }}/install.conf"
-        option: initrd_generator
-        value: "{{ uki_config_initrd_generator }}"
-        mode: '0644'
-        owner: root
-        group: root
-        seuser: system_u
-        serole: object_r
-        setype: etc_t
+        - name: Set the install layout to UKI
+          community.general.ini_file:
+            path: "{{ install_conf_path }}"
+            option: layout
+            value: uki
+            mode: '0644'
+            owner: root
+            group: root
+            seuser: system_u
+            serole: object_r
+            setype: etc_t
 
-    - name: Configure kernel-install to use the requested UKI generator
-      community.general.ini_file:
-        path: "{{ uki_config_kernel_install_config_root }}/install.conf"
-        option: "uki_generator"
-        value: "{{ uki_config_uki_generator }}"
-        mode: '0644'
-        owner: root
-        group: root
-        seuser: system_u
-        serole: object_r
-        setype: etc_t
+        - name: Configure kernel-install to use the requested initrd generator
+          community.general.ini_file:
+            path: "{{ install_conf_path }}"
+            option: initrd_generator
+            value: "{{ uki_config_initrd_generator }}"
+            mode: '0644'
+            owner: root
+            group: root
+            seuser: system_u
+            serole: object_r
+            setype: etc_t
 
-- name: Configure dracut to sign generated UKIs
-  when: uki_config_uki_generator == 'dracut'
-  become: true
-  notify:
-    - Rebuild UKI
-  block:
-    - name: Set signing certificate
-      community.general.ini_file:
-        path: "{{ uki_config_dracut_conf_dir }}/uki.conf"
-        option: uefi_secureboot_cert
-        value: "{{ uki_config_mok.certificate }}"
-        mode: '0644'
-        owner: root
-        group: root
-        seuser: system_u
-        serole: object_r
-        setype: etc_t
+        - name: Configure kernel-install to use the requested UKI generator
+          community.general.ini_file:
+            path: "{{ install_conf_path }}"
+            option: "uki_generator"
+            value: "{{ uki_config_uki_generator }}"
+            mode: '0644'
+            owner: root
+            group: root
+            seuser: system_u
+            serole: object_r
+            setype: etc_t
 
-    - name: Set signing private key
-      community.general.ini_file:
-        path: "{{ uki_config_dracut_conf_dir }}/uki.conf"
-        option: uefi_secureboot_key
-        value: "{{ uki_config_mok.private_key }}"
-        mode: '0644'
-        owner: root
-        group: root
-        seuser: system_u
-        serole: object_r
-        setype: etc_t
+    - name: Configure dracut to sign generated UKIs
+      when: uki_config_uki_generator == 'dracut'
+      block:
+        - name: Save original file
+          ansible.builtin.fetch:
+            src: "{{ dracut_conf_path }}"
+            dest: "{{ backup_dir.path }}"
+            fail_on_missing: false
 
-- name: Configure ukify to sign generated UKIs
-  when: uki_config_uki_generator == "ukify"
-  become: true
-  notify:
-    - Rebuild UKI
-  block:
-    - name: Set singing tool
-      community.general.ini_file:
-        path: "{{ uki_config_kernel_install_config_root }}/uki.conf"
-        section: UKI
-        option: SecureBootSigningTool
-        value: sbsign
-        mode: '0644'
-        owner: root
-        group: root
-        seuser: system_u
-        serole: object_r
-        setype: etc_t
+        - name: Set signing certificate
+          community.general.ini_file:
+            path: "{{ dracut_conf_path }}"
+            option: uefi_secureboot_cert
+            value: "{{ uki_config_mok.certificate }}"
+            mode: '0644'
+            owner: root
+            group: root
+            seuser: system_u
+            serole: object_r
+            setype: etc_t
 
-    - name: Set kernel command line
-      community.general.ini_file:
-        path: "{{ uki_config_kernel_install_config_root }}/uki.conf"
-        section: UKI
-        option: Cmdline
-        value: "@{{ uki_config_cmdline }}"
-        mode: '0644'
-        owner: root
-        group: root
-        seuser: system_u
-        serole: object_r
-        setype: etc_t
+        - name: Set signing private key
+          community.general.ini_file:
+            path: "{{ dracut_conf_path }}"
+            option: uefi_secureboot_key
+            value: "{{ uki_config_mok.private_key }}"
+            mode: '0644'
+            owner: root
+            group: root
+            seuser: system_u
+            serole: object_r
+            setype: etc_t
 
-    - name: Set signing private key
-      community.general.ini_file:
-        path: "{{ uki_config_kernel_install_config_root }}/uki.conf"
-        section: UKI
-        option: SecureBootPrivateKey
-        value: "{{ uki_config_mok.private_key }}"
-        mode: '0644'
-        owner: root
-        group: root
-        seuser: system_u
-        serole: object_r
-        setype: etc_t
+    - name: Configure ukify to sign generated UKIs
+      when: uki_config_uki_generator == "ukify"
+      block:
+        - name: Save original file
+          ansible.builtin.fetch:
+            src: "{{ ukify_conf_path }}"
+            dest: "{{ backup_dir.path }}"
+            fail_on_missing: false
 
-    - name: Set signing certificate
-      community.general.ini_file:
-        path: "{{ uki_config_kernel_install_config_root }}/uki.conf"
-        section: UKI
-        option: SecureBootCertificate
-        value: "{{ uki_config_mok.certificate }}"
-        mode: '0644'
-        owner: root
-        group: root
-        seuser: system_u
-        serole: object_r
-        setype: etc_t
+        - name: Set singing tool
+          community.general.ini_file:
+            path: "{{ ukify_conf_path }}"
+            section: UKI
+            option: SecureBootSigningTool
+            value: sbsign
+            mode: '0644'
+            owner: root
+            group: root
+            seuser: system_u
+            serole: object_r
+            setype: etc_t
+
+        - name: Set kernel command line
+          community.general.ini_file:
+            path: "{{ ukify_conf_path }}"
+            section: UKI
+            option: Cmdline
+            value: "@{{ uki_config_cmdline }}"
+            mode: '0644'
+            owner: root
+            group: root
+            seuser: system_u
+            serole: object_r
+            setype: etc_t
+
+        - name: Set signing private key
+          community.general.ini_file:
+            path: "{{ ukify_conf_path }}"
+            section: UKI
+            option: SecureBootPrivateKey
+            value: "{{ uki_config_mok.private_key }}"
+            mode: '0644'
+            owner: root
+            group: root
+            seuser: system_u
+            serole: object_r
+            setype: etc_t
+
+        - name: Set signing certificate
+          community.general.ini_file:
+            path: "{{ ukify_conf_path }}"
+            section: UKI
+            option: SecureBootCertificate
+            value: "{{ uki_config_mok.certificate }}"
+            mode: '0644'
+            owner: root
+            group: root
+            seuser: system_u
+            serole: object_r
+            setype: etc_t
+
+    - name: Rebuild UKI
+      ansible.builtin.command:
+        argv:
+          - kernel-install
+          - --verbose
+          - add
+      changed_when: true
+
+  rescue:
+    - name: Restore ukify config
+      vars:
+        backup_path: "{{ backup_dir.path }}/{{ ansible_host }}/uki.conf"
+      block:
+        - name: Restore original file if applicable
+          when: backup_path is exists
+          ansible.builtin.copy:
+            src: "{{ backup_path }}"
+            dest: "{{ ukify_conf_path }}"
+
+        - name: Delete new file if applicable
+          when: not backup_path is exists
+          ansible.builtin.file:
+            path: "{{ ukify_conf_path }}"
+            state: absent
+
+    - name: Restore dracut config
+      vars:
+        backup_path: "{{ backup_dir.path }}/{{ ansible_host }}/uki.conf"
+      block:
+        - name: Restore original file if applicable
+          when: backup_path is exists
+          ansible.builtin.copy:
+            src: "{{ backup_path }}"
+            dest: "{{ dracut_conf_path }}"
+
+        - name: Delete new file if applicable
+          when: not backup_path is exists
+          ansible.builtin.file:
+            path: "{{ dracut_conf_path }}"
+            state: absent
+
+    - name: Restore kernel-install config
+      vars:
+        backup_path: "{{ backup_dir.path }}/{{ ansible_host }}/install.conf"
+      block:
+        - name: Restore original file if backed up
+          when: backup_path is exists
+          ansible.builtin.copy:
+            src: "{{ backup_path }}"
+            path: "{{ install_conf_path }}"
+
+        - name: Remove new install.conf file
+          when: not backup_path is exists
+          ansible.builtin.file:
+            path: "{{ install_conf_path }}"
+            state: absent
