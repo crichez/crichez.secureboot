@@ -145,6 +145,7 @@
     install_conf_path: "{{ uki_config_kernel_install_config_root }}/install.conf"
     ukify_conf_path: "{{ uki_config_kernel_install_config_root }}/uki.conf"
     dracut_conf_path: "{{ uki_config_dracut_conf_dir }}/uki.conf"
+    rebuild_uki: false
   block:
     - name: Configure kernel-install to generate UKIs
       block:
@@ -166,6 +167,7 @@
             seuser: system_u
             serole: object_r
             setype: etc_t
+          register: kernel_install_layout
 
         - name: Configure kernel-install to use the requested initrd generator
           community.general.ini_file:
@@ -178,6 +180,7 @@
             seuser: system_u
             serole: object_r
             setype: etc_t
+          register: kernel_install_initrd_generator
 
         - name: Configure kernel-install to use the requested UKI generator
           community.general.ini_file:
@@ -190,6 +193,7 @@
             seuser: system_u
             serole: object_r
             setype: etc_t
+          register: kernel_install_uki_generator
 
     - name: Configure dracut to sign generated UKIs
       when: uki_config_uki_generator == 'dracut'
@@ -212,6 +216,7 @@
             seuser: system_u
             serole: object_r
             setype: etc_t
+          register: dracut_signing_certificate
 
         - name: Set signing private key
           community.general.ini_file:
@@ -224,6 +229,7 @@
             seuser: system_u
             serole: object_r
             setype: etc_t
+          register: dracut_signing_private_key
 
     - name: Configure ukify to sign generated UKIs
       when: uki_config_uki_generator == "ukify"
@@ -247,6 +253,7 @@
             seuser: system_u
             serole: object_r
             setype: etc_t
+          register: ukify_signing_tool
 
         - name: Set kernel command line
           community.general.ini_file:
@@ -260,6 +267,7 @@
             seuser: system_u
             serole: object_r
             setype: etc_t
+          register: ukify_kernel_command_line
 
         - name: Set signing private key
           community.general.ini_file:
@@ -273,6 +281,7 @@
             seuser: system_u
             serole: object_r
             setype: etc_t
+          register: ukify_singing_private_key
 
         - name: Set signing certificate
           community.general.ini_file:
@@ -286,8 +295,19 @@
             seuser: system_u
             serole: object_r
             setype: etc_t
+          register: ukify_signing_certificate
 
     - name: Rebuild UKI
+      when:
+        kernel_install_layout is changed or
+        kernel_install_initrd_generator is changed or
+        kernel_install_uki_generator is changed or
+        (dracut_signing_certificate is defined and dracut_signing_certificate is changed) or
+        (dracut_signing_private_key is defined and dracut_signing_private_key is changed) or
+        (ukify_signing_tool is defined and ukify_signing_tool is changed) or
+        (ukify_signing_private_key is defined and ukify_signing_private_key is changed) or
+        (ukify_signing_certificate is defined and ukify_signing_certificate is changed) or
+        (ukify_kernel_command_line is defined and ukify_kernel_command_line is changed)
       ansible.builtin.command:
         argv:
           - kernel-install
