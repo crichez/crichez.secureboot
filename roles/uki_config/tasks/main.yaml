@@ -137,6 +137,7 @@
     state: directory
   register: backup_dir
   delegate_to: localhost
+  changed_when: false
 
 - name: Configure kernel-install to generate and sign UKIs
   become: true
@@ -152,6 +153,7 @@
             src: "{{ install_conf_path }}"
             dest: "{{ backup_dir.path }}"
             fail_on_missing: false
+          changed_when: false
 
         - name: Set the install layout to UKI
           community.general.ini_file:
@@ -197,6 +199,7 @@
             src: "{{ dracut_conf_path }}"
             dest: "{{ backup_dir.path }}"
             fail_on_missing: false
+          changed_when: false
 
         - name: Set signing certificate
           community.general.ini_file:
@@ -230,6 +233,7 @@
             src: "{{ ukify_conf_path }}"
             dest: "{{ backup_dir.path }}"
             fail_on_missing: false
+          changed_when: false
 
         - name: Set singing tool
           community.general.ini_file:
