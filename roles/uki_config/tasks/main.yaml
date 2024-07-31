@@ -132,29 +132,21 @@
       changed_when: false
       failed_when: validate_mok_request.rc == 0
 
-- name: Get a temporary directory to store backup paths for error handlers
-  ansible.builtin.tempfile:
-    state: directory
-  register: backup_dir
-  delegate_to: localhost
-  changed_when: false
-
 - name: Configure kernel-install to generate and sign UKIs
   become: true
   vars:
     install_conf_path: "{{ uki_config_kernel_install_config_root }}/install.conf"
     ukify_conf_path: "{{ uki_config_kernel_install_config_root }}/uki.conf"
     dracut_conf_path: "{{ uki_config_dracut_conf_dir }}/uki.conf"
-    rebuild_uki: false
   block:
     - name: Configure kernel-install to generate UKIs
       block:
         - name: Save the original file
-          ansible.builtin.fetch:
+          ansible.builtin.slurp:
             src: "{{ install_conf_path }}"
-            dest: "{{ backup_dir.path }}"
-            fail_on_missing: false
+          register: kernel_install_config_backup
           changed_when: false
+          ignore_errors: true
 
         - name: Set the install layout to UKI
           community.general.ini_file:
@@ -199,11 +191,11 @@
       when: uki_config_uki_generator == 'dracut'
       block:
         - name: Save original file
-          ansible.builtin.fetch:
+          ansible.builtin.slurp:
             src: "{{ dracut_conf_path }}"
-            dest: "{{ backup_dir.path }}"
-            fail_on_missing: false
+          register: dracut_config_backup
           changed_when: false
+          ignore_errors: true
 
         - name: Set signing certificate
           community.general.ini_file:
@@ -235,11 +227,11 @@
       when: uki_config_uki_generator == "ukify"
       block:
         - name: Save original file
-          ansible.builtin.fetch:
+          ansible.builtin.slurp:
             src: "{{ ukify_conf_path }}"
-            dest: "{{ backup_dir.path }}"
-            fail_on_missing: false
+          register: ukify_config_backup
           changed_when: false
+          ignore_errors: true
 
         - name: Set singing tool
           community.general.ini_file:
@@ -317,49 +309,53 @@
 
   rescue:
     - name: Restore ukify config
-      vars:
-        backup_path: "{{ backup_dir.path }}/{{ ansible_host }}/uki.conf"
       block:
-        - name: Restore original file if applicable
-          when: backup_path is exists
+        - name: Restore ukify configuration file
+          when:
+            - ukify_config_backup is not failed
+            - ukify_config_backup is not skipped
           ansible.builtin.copy:
-            src: "{{ backup_path }}"
+            content: "{{ ukify_config_backup.content | b64decode }}"
             dest: "{{ ukify_conf_path }}"
+          changed_when: false
 
-        - name: Delete new file if applicable
-          when: not backup_path is exists
+        - name: Delete new ukify configuration file
+          when: ukify_config_backup is failed
           ansible.builtin.file:
             path: "{{ ukify_conf_path }}"
             state: absent
+          changed_when: false
 
     - name: Restore dracut config
-      vars:
-        backup_path: "{{ backup_dir.path }}/{{ ansible_host }}/uki.conf"
       block:
-        - name: Restore original file if applicable
-          when: backup_path is exists
+        - name: Restore original dracut configuration file
+          when:
+            - dracut_config_backup is not failed
+            - dracut_config_backup is not skipped
           ansible.builtin.copy:
-            src: "{{ backup_path }}"
+            content: "{{ dracut_config_backup.content | b64decode }}"
             dest: "{{ dracut_conf_path }}"
+          changed_when: false
 
-        - name: Delete new file if applicable
-          when: not backup_path is exists
+        - name: Delete new dracut configuration file
+          when: dracut_config_backup is failed
           ansible.builtin.file:
             path: "{{ dracut_conf_path }}"
             state: absent
+          changed_when: false
 
     - name: Restore kernel-install config
-      vars:
-        backup_path: "{{ backup_dir.path }}/{{ ansible_host }}/install.conf"
       block:
-        - name: Restore original file if backed up
-          when: backup_path is exists
+        - name: Restore original kernel-install configuration file
+          when: kernel_install_config_backup is not failed
           ansible.builtin.copy:
-            src: "{{ backup_path }}"
-            path: "{{ install_conf_path }}"
+            content: "{{ kernel_install_config_backup.content | b64decode }}"
+            dest: "{{ install_conf_path }}"
+          changed_when: false
 
-        - name: Remove new install.conf file
-          when: not backup_path is exists
+        - name: Remove new kernel-install configuration file
+          when: kernel_install_config_backup is failed
           ansible.builtin.file:
             path: "{{ install_conf_path }}"
             state: absent
+          changed_when: false
