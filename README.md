@@ -38,7 +38,8 @@ or:
       - expect
 ```
 
-The requirements for the `uki_config` role are described in the following three sections:
+For every other platform, the requirements for the `uki_config` role are described in the
+following three sections:
 1. System requirements
 2. Package dependencies
 3. Argument-specific dependencies
