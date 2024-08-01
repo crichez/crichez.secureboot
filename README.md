@@ -16,6 +16,12 @@ high-level things:
 
 ## Requirements
 
+If you're using Fedora 40, you can satisfy this entire section with:
+
+```sh
+dnf install openssl systemd-boot sbsigntools binutils systemd-ukify virt-firmware uki-direct expect
+```
+
 The requirements for the `uki_config` role are described in the following three sections:
 1. System requirements
 2. Package dependencies
@@ -27,12 +33,6 @@ The requirements for the `uki_config` role are described in the following three 
   support. This is not technically a requirement for UKIs, but is considered so by this role.
 
 ### Package dependencies
-
-If you're using Fedora 40, you can satisfy this entire section with:
-
-```sh
-dnf install openssl systemd-boot sbsigntools binutils systemd-ukify virt-firmware uki-direct expect
-```
 
 **shim**
 
