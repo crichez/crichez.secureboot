@@ -16,7 +16,7 @@ jobs:
       - name: Create collection directory
         run: mkdir -p "$HOME/.ansible/collections/ansible_collections/tofugarden/secureboot"
       - name: Copy repo contents to collection dir
-        run: cp -r * "$HOME/.ansible/collections/ansible_collections/tofuarden/secureboot/"
+        run: cp -r * "$HOME/.ansible/collections/ansible_collections/tofugarden/secureboot/"
       - name: Run ansible-test
         run: ansible-test sanity
         working-directory: "$HOME/.ansible/collections"
