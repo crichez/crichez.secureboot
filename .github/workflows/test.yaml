@@ -1,0 +1,24 @@
+name: ansible-test
+on:
+  pull_request:
+    branches:
+      - main
+      - release/v*
+
+  workflow_dispatch:
+
+jobs:
+  lint:
+    name: Ansible Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create collection dir structure
+        run: mkdir "$HOME/.ansible/collections/ansible_collections/tofugarden"
+      - name: Create collection directory
+        run: mkdir "$HOME/.ansible/collections/ansible_collections/tofugarden/secureboot"
+      - name: Copy repo contents to collection dir
+        run: cp -r * "$HOME/.ansible/collections/ansible_collections/tofuarden/secureboot/"
+      - name: Run ansible-test
+        run: ansible-test sanity
+        working_directory: "$HOME/.ansible/collections"
