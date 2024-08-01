@@ -4,7 +4,7 @@ This repository contains an Ansible roles to configure secure boot.
 
 ## Overview
 
-Currently, only omne role is provided by this collection: `uki_config`. It does the following
+Currently, only one role is provided by this collection: `uki_config`. It does the following
 high-level things:
 
 1. Enroll a valid machine owner key (MOK) for image signing
@@ -20,18 +20,6 @@ high-level things:
 This role requires that secure boot be enabled on each host. There are not many reasons to
 use UKIs without secure boot, so this was assumed. If you would like support for unsigned
 UKIs, please submit an issue/PR.
-
-### Layout
-
-This repository does not (yet?) use the standardized collection directory structure. Instead,
-the role is stored in `./roles/uki_config` relative to the project root. This should make it
-easy to import for use in your own playbook.
-
-### Examples
-
-A test playbook is provided in the project root, under the name `playbook.yaml`. It is configued
-to run the role with default arguments for all hosts in a "test" group. An inventory file is not
-provided.
 
 ### Interaction
 
