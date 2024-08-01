@@ -317,6 +317,12 @@
           ansible.builtin.copy:
             content: "{{ ukify_config_backup.content | b64decode }}"
             dest: "{{ ukify_conf_path }}"
+            owner: root
+            group: root
+            mode: 0644
+            seuser: system_u
+            serole: object_r
+            setype: etc_t
           changed_when: false
 
         - name: Delete new ukify configuration file
@@ -335,6 +341,12 @@
           ansible.builtin.copy:
             content: "{{ dracut_config_backup.content | b64decode }}"
             dest: "{{ dracut_conf_path }}"
+            owner: root
+            group: root
+            mode: 0644
+            seuser: system_u
+            serole: object_r
+            setype: etc_t
           changed_when: false
 
         - name: Delete new dracut configuration file
@@ -342,6 +354,12 @@
           ansible.builtin.file:
             path: "{{ dracut_conf_path }}"
             state: absent
+            owner: root
+            group: root
+            mode: 0644
+            seuser: system_u
+            serole: object_r
+            setype: etc_t
           changed_when: false
 
     - name: Restore kernel-install config
