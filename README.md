@@ -22,6 +22,22 @@ If you're using Fedora 40, you can satisfy this entire section with:
 dnf install openssl systemd-boot sbsigntools binutils systemd-ukify virt-firmware uki-direct expect
 ```
 
+or:
+
+```yaml
+- name: Install dependencies
+  ansible.builtin.dnf:
+    name:
+      - openssl
+      - systemd-boot
+      - sbsigntools
+      - binutils
+      - systemd-ukify
+      - virt-firmware
+      - uki-direct
+      - expect
+```
+
 The requirements for the `uki_config` role are described in the following three sections:
 1. System requirements
 2. Package dependencies
