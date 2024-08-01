@@ -1,0 +1,4 @@
+- name: Test playbook
+  hosts: test
+  roles:
+    - role: uki_config
