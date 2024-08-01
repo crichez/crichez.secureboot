@@ -28,7 +28,7 @@ argument_specs:
             type: path
             description: The path to the MOK x509 certificate.
             default: /etc/kernel/MOK.cer
-          
+
           owner:
             type: str
             default: root
