@@ -1,18 +1,3 @@
-- name: Install dependencies
-  become: true
-  block:
-    - name: Install required packages
-      ansible.builtin.dnf:
-        name:
-          - systemd-ukify
-          - sbsigntools
-          - systemd-boot
-          - openssl
-          - expect
-          - virt-firmware
-          - uki-direct
-          - binutils
-
 - name: Gather keys and certificates
   become: true
   block:

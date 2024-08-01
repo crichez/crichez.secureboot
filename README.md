@@ -17,6 +17,16 @@ high-level things:
 
 ### Requirements
 
+Package dependencies (names are from dnf/yum):
+  - systemd-ukify
+  - sbsigntools
+  - systemd-boot
+  - openssl
+  - expect
+  - virt-firmware
+  - uki-direct
+  - binutils
+
 This role requires that secure boot be enabled on each host. There are not many reasons to
 use UKIs without secure boot, so this was assumed. If you would like support for unsigned
 UKIs, please submit an issue/PR.
