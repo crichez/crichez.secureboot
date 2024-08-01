@@ -62,17 +62,6 @@ argument_specs:
         description: The path to the kernel command line.
         default: /etc/kernel/cmdline
 
-      uki_config_uki_generator:
-        type: str
-        description: The tool used to generate the UKI.
-        choices:
-          - ukify
-          - dracut
-
       uki_config_kernel_install_config_root:
         type: path
         default: /etc/kernel
-
-      uki_config_dracut_conf_dir:
-        type: path
-        default: /etc/dracut.conf.d
