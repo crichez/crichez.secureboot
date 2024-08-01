@@ -122,7 +122,6 @@
   vars:
     install_conf_path: "{{ uki_config_kernel_install_config_root }}/install.conf"
     ukify_conf_path: "{{ uki_config_kernel_install_config_root }}/uki.conf"
-    dracut_conf_path: "{{ uki_config_dracut_conf_dir }}/uki.conf"
   block:
     - name: Configure kernel-install to generate UKIs
       block:
@@ -162,8 +161,8 @@
         - name: Configure kernel-install to use the requested UKI generator
           community.general.ini_file:
             path: "{{ install_conf_path }}"
-            option: "uki_generator"
-            value: "{{ uki_config_uki_generator }}"
+            option: uki_generator
+            value: ukify
             mode: '0644'
             owner: root
             group: root
@@ -172,44 +171,7 @@
             setype: etc_t
           register: kernel_install_uki_generator
 
-    - name: Configure dracut to sign generated UKIs
-      when: uki_config_uki_generator == 'dracut'
-      block:
-        - name: Save original file
-          ansible.builtin.slurp:
-            src: "{{ dracut_conf_path }}"
-          register: dracut_config_backup
-          changed_when: false
-          ignore_errors: true
-
-        - name: Set signing certificate
-          community.general.ini_file:
-            path: "{{ dracut_conf_path }}"
-            option: uefi_secureboot_cert
-            value: "{{ uki_config_mok.certificate }}"
-            mode: '0644'
-            owner: root
-            group: root
-            seuser: system_u
-            serole: object_r
-            setype: etc_t
-          register: dracut_signing_certificate
-
-        - name: Set signing private key
-          community.general.ini_file:
-            path: "{{ dracut_conf_path }}"
-            option: uefi_secureboot_key
-            value: "{{ uki_config_mok.private_key }}"
-            mode: '0644'
-            owner: root
-            group: root
-            seuser: system_u
-            serole: object_r
-            setype: etc_t
-          register: dracut_signing_private_key
-
     - name: Configure ukify to sign generated UKIs
-      when: uki_config_uki_generator == "ukify"
       block:
         - name: Save original file
           ansible.builtin.slurp:
@@ -279,8 +241,6 @@
         kernel_install_layout is changed or
         kernel_install_initrd_generator is changed or
         kernel_install_uki_generator is changed or
-        (dracut_signing_certificate is defined and dracut_signing_certificate is changed) or
-        (dracut_signing_private_key is defined and dracut_signing_private_key is changed) or
         (ukify_signing_tool is defined and ukify_signing_tool is changed) or
         (ukify_signing_private_key is defined and ukify_signing_private_key is changed) or
         (ukify_signing_certificate is defined and ukify_signing_certificate is changed) or
@@ -314,30 +274,6 @@
           when: ukify_config_backup is failed
           ansible.builtin.file:
             path: "{{ ukify_conf_path }}"
-            state: absent
-          changed_when: false
-
-    - name: Restore dracut config
-      block:
-        - name: Restore original dracut configuration file
-          when:
-            - dracut_config_backup is not failed
-            - dracut_config_backup is not skipped
-          ansible.builtin.copy:
-            content: "{{ dracut_config_backup.content | b64decode }}"
-            dest: "{{ dracut_conf_path }}"
-            owner: root
-            group: root
-            mode: "0644"
-            seuser: system_u
-            serole: object_r
-            setype: etc_t
-          changed_when: false
-
-        - name: Delete new dracut configuration file
-          when: dracut_config_backup is failed
-          ansible.builtin.file:
-            path: "{{ dracut_conf_path }}"
             state: absent
           changed_when: false
 
