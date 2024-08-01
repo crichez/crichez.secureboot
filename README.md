@@ -13,23 +13,108 @@ high-level things:
 3. Configure a tool to automatically sign generated UKIs using the enrolled MOK
 4. Configure the host to boot straight from `shim` to the UKI, skipping GRUB entirely
 
-## Usage
 
-### Requirements
+## Requirements
 
-Package dependencies (names are from dnf/yum):
-  - systemd-ukify
-  - sbsigntools
-  - systemd-boot
-  - openssl
-  - expect
-  - virt-firmware
-  - uki-direct
-  - binutils
+If you're using Fedora 40, you can satisfy this entire section with:
 
-This role requires that secure boot be enabled on each host. There are not many reasons to
-use UKIs without secure boot, so this was assumed. If you would like support for unsigned
-UKIs, please submit an issue/PR.
+```sh
+dnf install openssl systemd-boot sbsigntools binutils systemd-ukify virt-firmware uki-direct expect
+```
+
+or:
+
+```yaml
+- name: Install dependencies
+  ansible.builtin.dnf:
+    name:
+      - openssl
+      - systemd-boot
+      - sbsigntools
+      - systemd-ukify
+      - virt-firmware
+      - uki-direct
+      - expect
+```
+
+For every other platform, the requirements for the `uki_config` role are described in the
+following three sections:
+1. System requirements
+2. Package dependencies
+3. Argument-specific dependencies
+
+### System requirements
+
+- A UEFI firmware platform with [secure boot](https://en.wikipedia.org/wiki/UEFI#Secure_Boot)
+  support. This is not technically a requirement for UKIs, but is considered so by this role.
+
+### Package dependencies
+
+**shim**
+
+This role assumes `shim` is used to authenticate binaries. This should alredy come packaged in any
+modern Linux distribution. Support for skipping shim is not provided, but please submit an issue
+or PR if you need this.
+
+**kernel-install**
+
+Although a single UKI build can be done without it, this role assumes the use of systemd
+`kernel-install` *version 255 or greater*. This is typically provided by the "systemd-udev"
+package on modern distributions, but may be too old. 
+
+**virt-firmware**
+
+The virt-firmware python package is required to configure shim to boot straight to your UKI. On
+Fedora 40, the tools needed are split into the `virt-firmware` main package and `uki-direct`
+subpackage. 
+
+On other platforms, you may be able to use your python package manager of choice, or
+[get it from PyPI](https://pypi.org/project/virt-firmware/). If you do this without a system
+package, you will need to make sure:
+
+- `kernel-bootcfg` is in your path
+- `99-uki-uefi-setup.install` is executable in `/etc/kernel/install.d`
+- `kernel-bootcfg-boot-successful.service` is loaded
+
+**openssl**
+
+Openssl is required by the `community.crypto` modules used by the role. Even if you choose to
+import your own MOK, the role still checks it for validity.
+
+**systemd-stub**
+
+The systemd kernel boot stub is required to make the unified kernel image bootable. On Fedora,
+this is shipped with the "systemd-boot" package.
+
+**sbsign**
+
+The `sbsign` utility is required to sign UKIs. This is usually provided by the "sbsigntools"
+package.
+
+**ukify**
+
+`ukify` is the only supported UKI generator, you should have it installed. This is usually
+provided by the "systemd-ukify" package.
+
+### Argument-dependent dependecies
+
+**dracut or other initrd generator**
+
+By default, `dracut` is the tool declared in `uki_config_initrd_generator`, so should be
+installed if you don't modify this argument. Others may be used as long as they are supported
+by your system *and* `kernel-install`. Note that some generators like `dracut` and `mkinitcpio`
+have support for UKI generation on their own; this is not supported and will cause failures.
+The role expects a regular inird to be generated, and builds a UKI with it using `ukify`.
+
+**mokutil**
+
+The `mokutil` tool is used to validate the enrollment status of your generated or provided MOK.
+
+**expect**
+
+This role uses the `expect` executable to interact with `mokutil` *only if you need to enroll a
+new MOK*. If you run the role with a MOK already enrolled through MokManager, `expect` will
+never be called.
 
 ### Interaction
 
@@ -58,10 +143,8 @@ All arguments have default values, reflected in the following example:
     - role: uki_config
       vars:
         uki_config_initrd_generator: dracut
-        uki_config_uki_generator: ukify
         uki_config_cmdline: /etc/kernel/cmdline
         uki_config_kernel_intall_config_root: /etc/kernel
-        uki_config_dracut_conf_dir: /etc/dracut.conf.d
         uki_config_mok:
           private_key: /etc/kernel/MOK.priv
           certificate: /etc/kernel/MOK.cer
@@ -74,17 +157,11 @@ All arguments have default values, reflected in the following example:
           setype: cert_t
 ```
 
-### Initrd Generator
+### `uki_config_initrd_generator`
 
-The only accepted option is dracut. Please submit an issue/PR if you want support for another.
+Your initrd generator of choice, or `dracut` by default.
 
-### UKI Generator
-
-You may select:
-- dracut
-- ukify
-
-### Kernel Command Line
+### `uki_config_cmdline`
 
 You may substitute this path to any path readable by root. Passing the content of the kernel
 command line is not supported. Please submit an issue/PR if you want support for this.
@@ -92,13 +169,12 @@ command line is not supported. Please submit an issue/PR if you want support for
 > Note: The kernel command line is ignored when dracut is the UKI generator. Please configure
         dracut yourself if you want a different command line.
 
-### Configuration Directories
+### `uki_config_kernel_install_config_root`
 
-The `uki_config_kernel_install_config_root` and `uki_config_dracut_conf_dir` arguments allow
-you to specify where you custom configuration should be applied. You may for example wish to
-keep it under `/usr/lib/kernel` and `/usr/lib/dracut` respectively.
+These arguments allow you to specify where you custom configuration should be applied. You may for
+example wish to keep it under `/usr/lib/kernel`.
 
-### MOK Information
+### `uki_config_mok`
 
 By default, a MOK is created at the path specified under `private_key` and `certificate` if
 an adequate key/certificate pair does not already exist at that path. If you wish to bring
