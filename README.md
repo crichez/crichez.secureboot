@@ -31,7 +31,6 @@ or:
       - openssl
       - systemd-boot
       - sbsigntools
-      - binutils
       - systemd-ukify
       - virt-firmware
       - uki-direct
@@ -60,9 +59,8 @@ or PR if you need this.
 **kernel-install**
 
 Although a single UKI build can be done without it, this role assumes the use of systemd
-`kernel-install` *version 250 or greater*. This is typically provided by the "systemd-udev"
-package on modern distributions, but may be too old. To use systemd's "ukify" as a UKI generator,
-kernel-install *version 255 or greater* must be installed.
+`kernel-install` *version 255 or greater*. This is typically provided by the "systemd-udev"
+package on modern distributions, but may be too old. 
 
 **virt-firmware**
 
@@ -93,24 +91,18 @@ this is shipped with the "systemd-boot" package.
 The `sbsign` utility is required to sign UKIs. This is usually provided by the "sbsigntools"
 package.
 
+**ukify**
+
+`ukify` is the only supported UKI generator, you should have it installed. This is usually
+provided by the "systemd-ukify" package.
+
 ### Argument-dependent dependecies
 
 **dracut**
 
-If you wish to use `dracut` as your initramfs *or* UKI generator, you should have it installed.
+If you wish to use `dracut` as your initramfs generator, you should have it installed.
 Note that this is currently the only supported initramfs generator, but this will be expanded
 soon.
-
-**objcopy**
-
-Using dracut as your UKI generator requires the `objcopy` tool, provided by the "binutils"
-package on Fedora.
-
-**ukify**
-
-If you wish to use `ukify` as your UKI generator, you should have it installed. This does bump
-the kernel-install version requirement to 255, so be mindful of its availability on your distro.
-This is usually provided by the "systemd-ukify" package.
 
 **mokutil**
 
@@ -149,10 +141,8 @@ All arguments have default values, reflected in the following example:
     - role: uki_config
       vars:
         uki_config_initrd_generator: dracut
-        uki_config_uki_generator: ukify
         uki_config_cmdline: /etc/kernel/cmdline
         uki_config_kernel_intall_config_root: /etc/kernel
-        uki_config_dracut_conf_dir: /etc/dracut.conf.d
         uki_config_mok:
           private_key: /etc/kernel/MOK.priv
           certificate: /etc/kernel/MOK.cer
@@ -165,17 +155,11 @@ All arguments have default values, reflected in the following example:
           setype: cert_t
 ```
 
-### Initrd Generator
+### `uki_config_initrd_generator`
 
 The only accepted option is dracut. Please submit an issue/PR if you want support for another.
 
-### UKI Generator
-
-You may select:
-- dracut
-- ukify
-
-### Kernel Command Line
+### `uki_config_cmdline`
 
 You may substitute this path to any path readable by root. Passing the content of the kernel
 command line is not supported. Please submit an issue/PR if you want support for this.
@@ -183,13 +167,12 @@ command line is not supported. Please submit an issue/PR if you want support for
 > Note: The kernel command line is ignored when dracut is the UKI generator. Please configure
         dracut yourself if you want a different command line.
 
-### Configuration Directories
+### `uki_config_kernel_install_config_root`
 
-The `uki_config_kernel_install_config_root` and `uki_config_dracut_conf_dir` arguments allow
-you to specify where you custom configuration should be applied. You may for example wish to
-keep it under `/usr/lib/kernel` and `/usr/lib/dracut` respectively.
+These arguments allow you to specify where you custom configuration should be applied. You may for
+example wish to keep it under `/usr/lib/kernel`.
 
-### MOK Information
+### `uki_config_mok`
 
 By default, a MOK is created at the path specified under `private_key` and `certificate` if
 an adequate key/certificate pair does not already exist at that path. If you wish to bring
