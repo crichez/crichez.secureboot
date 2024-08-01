@@ -7,8 +7,7 @@ argument_specs:
     options:
       uki_config_initrd_generator:
         type: str
-        choices:
-          - dracut
+        description: The tool kernel-install calls to generate an initramfs.
         default: dracut
 
       uki_config_mok:
