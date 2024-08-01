@@ -98,11 +98,13 @@ provided by the "systemd-ukify" package.
 
 ### Argument-dependent dependecies
 
-**dracut**
+**dracut or other initrd generator**
 
-If you wish to use `dracut` as your initramfs generator, you should have it installed.
-Note that this is currently the only supported initramfs generator, but this will be expanded
-soon.
+By default, `dracut` is the tool declared in `uki_config_initrd_generator`, so should be
+installed if you don't modify this argument. Others may be used as long as they are supported
+by your system *and* `kernel-install`. Note that some generators like `dracut` and `mkinitcpio`
+have support for UKI generation on their own; this is not supported and will cause failures.
+The role expects a regular inird to be generated, and builds a UKI with it using `ukify`.
 
 **mokutil**
 
@@ -157,7 +159,7 @@ All arguments have default values, reflected in the following example:
 
 ### `uki_config_initrd_generator`
 
-The only accepted option is dracut. Please submit an issue/PR if you want support for another.
+Your initrd generator of choice, or `dracut` by default.
 
 ### `uki_config_cmdline`
 
