@@ -1,10 +1,11 @@
-# uki-config
+# tofugarden.secureboot
 
-This repository contains an Ansible role to configure direct UKI booting on Fedora 40.
+This repository contains an Ansible roles to configure secure boot. 
 
 ## Overview
 
-The `uki_config` role does the following high-level things:
+Currently, only omne role is provided by this collection: `uki_config`. It does the following
+high-level things:
 
 1. Enroll a valid machine owner key (MOK) for image signing
 2. Configure `kernel-install` to generate a unified kernel image (UKI) instead of a separate
