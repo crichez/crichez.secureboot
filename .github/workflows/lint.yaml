@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Install collections
-        run: ansible-galaxy install community.crypto community.general
+        run: ansible-galaxy collection install community.crypto community.general
       - uses: actions/checkout@v4
       - name: Run ansible-lint
         uses: ansible/ansible-lint@main
