@@ -1,4 +1,4 @@
-name: ansible-test
+name: ansible-lint
 on:
   pull_request:
     branches:
@@ -9,14 +9,24 @@ on:
 
 jobs:
   lint:
-    name: Ansible Test
+    name: Ansible Lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          cache: pip
+
+      - name: Install python dependencies
+        run: pip install -r requirements.txt
+
       - name: Create collection directory
         run: mkdir -p "$HOME/.ansible/collections/ansible_collections/tofugarden/secureboot"
+
       - name: Copy repo contents to collection dir
         run: cp -r * "$HOME/.ansible/collections/ansible_collections/tofugarden/secureboot/"
-      - name: Run ansible-test
-        run: ansible-test sanity
+
+      - name: Run ansible-lint
+        run: ansible-lint
         working-directory: "/home/runner/.ansible/collections/ansible_collections/tofugarden/secureboot"
