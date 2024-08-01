@@ -8,10 +8,12 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  lint:
     name: Ansible Lint
     runs-on: ubuntu-latest
     steps:
+      - name: Install collections
+        run: ansible-galaxy install community.crypto community.general
       - uses: actions/checkout@v4
       - name: Run ansible-lint
         uses: ansible/ansible-lint@main
