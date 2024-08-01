@@ -21,4 +21,4 @@ jobs:
         run: cp -r * "$HOME/.ansible/collections/ansible_collections/tofuarden/secureboot/"
       - name: Run ansible-test
         run: ansible-test sanity
-        working_directory: "$HOME/.ansible/collections"
+        working-directory: "$HOME/.ansible/collections"
