@@ -17,7 +17,7 @@
           run: ansible-galaxy collection build
 
         - name: Get expected version string
-          shell: VERSION=$(echo "${{ github.ref_name }}" | sed -e 's/v([0-9]*\.?){3}/\1/')
+          shell: VERSION=$(echo "${{ github.ref_name }}" | echo "v0.0.1" | sed -e 's/v\(.*\)/\1/'
 
         - name: Publish to Galaxy
           run: ansible-galaxy collection publish tofugarden-secureboot-$VERSION.tar.gz --token ${{ secrets.GALAXY_API_KEY }}
