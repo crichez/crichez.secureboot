@@ -5,6 +5,8 @@ on:
       - main
       - release/v*
 
+  workflow_dispatch:
+
 jobs:
   build:
     name: Ansible Lint
