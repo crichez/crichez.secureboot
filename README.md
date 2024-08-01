@@ -13,23 +13,97 @@ high-level things:
 3. Configure a tool to automatically sign generated UKIs using the enrolled MOK
 4. Configure the host to boot straight from `shim` to the UKI, skipping GRUB entirely
 
-## Usage
 
-### Requirements
+## Requirements
 
-Package dependencies (names are from dnf/yum):
-  - systemd-ukify
-  - sbsigntools
-  - systemd-boot
-  - openssl
-  - expect
-  - virt-firmware
-  - uki-direct
-  - binutils
+The requirements for the `uki_config` role are described in the following three sections:
+1. System requirements
+2. Package dependencies
+3. Argument-specific dependencies
 
-This role requires that secure boot be enabled on each host. There are not many reasons to
-use UKIs without secure boot, so this was assumed. If you would like support for unsigned
-UKIs, please submit an issue/PR.
+### System requirements
+
+- A UEFI firmware platform with [secure boot](https://en.wikipedia.org/wiki/UEFI#Secure_Boot)
+  support. This is not technically a requirement for UKIs, but is considered so by this role.
+
+### Package dependencies
+
+If you're using Fedora 40, you can satisfy this entire section with:
+
+```sh
+dnf install openssl systemd-boot sbsigntools binutils systemd-ukify virt-firmware uki-direct expect
+```
+
+**shim**
+
+This role assumes `shim` is used to authenticate binaries. This should alredy come packaged in any
+modern Linux distribution. Support for skipping shim is not provided, but please submit an issue
+or PR if you need this.
+
+**kernel-install**
+
+Although a single UKI build can be done without it, this role assumes the use of systemd
+`kernel-install` *version 250 or greater*. This is typically provided by the "systemd-udev"
+package on modern distributions, but may be too old. To use systemd's "ukify" as a UKI generator,
+kernel-install *version 255 or greater* must be installed.
+
+**virt-firmware**
+
+The virt-firmware python package is required to configure shim to boot straight to your UKI. On
+Fedora 40, the tools needed are split into the `virt-firmware` main package and `uki-direct`
+subpackage. 
+
+On other platforms, you may be able to use your python package manager of choice, or
+[get it from PyPI](https://pypi.org/project/virt-firmware/). If you do this without a system
+package, you will need to make sure:
+
+- `kernel-bootcfg` is in your path
+- `99-uki-uefi-setup.install` is executable in `/etc/kernel/install.d`
+- `kernel-bootcfg-boot-successful.service` is loaded
+
+**openssl**
+
+Openssl is required by the `community.crypto` modules used by the role. Even if you choose to
+import your own MOK, the role still checks it for validity.
+
+**systemd-stub**
+
+The systemd kernel boot stub is required to make the unified kernel image bootable. On Fedora,
+this is shipped with the "systemd-boot" package.
+
+**sbsign**
+
+The `sbsign` utility is required to sign UKIs. This is usually provided by the "sbsigntools"
+package.
+
+### Argument-dependent dependecies
+
+**dracut**
+
+If you wish to use `dracut` as your initramfs *or* UKI generator, you should have it installed.
+Note that this is currently the only supported initramfs generator, but this will be expanded
+soon.
+
+**objcopy**
+
+Using dracut as your UKI generator requires the `objcopy` tool, provided by the "binutils"
+package on Fedora.
+
+**ukify**
+
+If you wish to use `ukify` as your UKI generator, you should have it installed. This does bump
+the kernel-install version requirement to 255, so be mindful of its availability on your distro.
+This is usually provided by the "systemd-ukify" package.
+
+**mokutil**
+
+The `mokutil` tool is used to validate the enrollment status of your generated or provided MOK.
+
+**expect**
+
+This role uses the `expect` executable to interact with `mokutil` *only if you need to enroll a
+new MOK*. If you run the role with a MOK already enrolled through MokManager, `expect` will
+never be called.
 
 ### Interaction
 
