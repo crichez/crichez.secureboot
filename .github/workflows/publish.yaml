@@ -6,6 +6,7 @@
 
   jobs:
     publish:
+      name: Publish to Galaxy
       runs-on: ubuntu-latest
       steps:
         - uses: checkout@v4
