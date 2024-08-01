@@ -319,7 +319,7 @@
             dest: "{{ ukify_conf_path }}"
             owner: root
             group: root
-            mode: 0644
+            mode: "0644"
             seuser: system_u
             serole: object_r
             setype: etc_t
@@ -343,7 +343,7 @@
             dest: "{{ dracut_conf_path }}"
             owner: root
             group: root
-            mode: 0644
+            mode: "0644"
             seuser: system_u
             serole: object_r
             setype: etc_t
@@ -356,7 +356,7 @@
             state: absent
             owner: root
             group: root
-            mode: 0644
+            mode: "0644"
             seuser: system_u
             serole: object_r
             setype: etc_t
