@@ -1,19 +1,13 @@
+---
 namespace: tofugarden
-
 name: secureboot
-
 version: 0.0.1
-
 readme: README.md
-
 authors:
   Christopher Palmer-Richez tofu.ansible@chorky.net @crichez
-
 description: A collection related to secure boot management.
-
 license:
   - GPL-3.0-only
-
 tags:
   - linux
   - security
@@ -23,13 +17,9 @@ tags:
   - shim
   - tpm
   - uki
-
 dependencies:
   community.crypto: ">=2.21.0,<3.0.0"
   community.general: ">=9.0.0,<10.0.0"
-
 repository: https://github.com/crichez/tofugarden.secureboot.git
-
 documentation: https://github.com/crichez/tofugarden.secureboot
-
 issues: https://github.com/crichez/tofugarden.secureboot/issues
