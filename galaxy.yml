@@ -1,5 +1,5 @@
 ---
-namespace: tofugarden
+namespace: crichez
 name: secureboot
 version: 1.0.0
 readme: README.md
@@ -20,6 +20,6 @@ tags:
 dependencies:
   community.crypto: ">=2.21.0,<3.0.0"
   community.general: ">=9.0.0,<10.0.0"
-repository: https://github.com/crichez/tofugarden.secureboot.git
-documentation: https://github.com/crichez/tofugarden.secureboot
-issues: https://github.com/crichez/tofugarden.secureboot/issues
+repository: https://github.com/crichez/crichez.secureboot.git
+documentation: https://github.com/crichez/crichez.secureboot
+issues: https://github.com/crichez/crichez.secureboot/issues
