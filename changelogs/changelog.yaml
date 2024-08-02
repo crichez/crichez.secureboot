@@ -1,14 +1,13 @@
----
 ancestor: null
 releases:
   1.0.0:
-    release_date: "2024-08-02"
-    fragments:
-      - Initial release
     changes:
       release_summary: Initial release
+    fragments:
+    - Initial release
     objects:
       role:
-        - name: uki_config
-          description: Configure kernel-install to use UKIs
-          namespace: null
+      - description: Configure kernel-install to use UKIs
+        name: uki_config
+        namespace: null
+    release_date: '2024-08-02'
