@@ -4,7 +4,7 @@ name: secureboot
 version: 1.0.0
 readme: README.md
 authors:
-  Christopher Palmer-Richez tofu.ansible@chorky.net @crichez
+  - Christopher Palmer-Richez tofu.ansible@chorky.net @crichez
 description: A collection related to secure boot management.
 license:
   - GPL-3.0-only
