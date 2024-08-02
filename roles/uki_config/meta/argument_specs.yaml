@@ -1,8 +1,9 @@
+---
 argument_specs:
   main:
     short_description: UKI Configuration
     description: Configure kernel-install to build and sign UKIs
-    version_added: "0.0.1"
+    version_added: "1.0.0"
     author: "Christopher Palmer-Richez (tofugarden)"
     options:
       uki_config_initrd_generator:
