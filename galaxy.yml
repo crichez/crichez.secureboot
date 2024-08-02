@@ -15,6 +15,9 @@ license:
   - GPL-3.0-only
 
 tags:
+  - linux
+  - security
+  - tools
   - secureboot
   - mok
   - shim
