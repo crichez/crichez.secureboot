@@ -34,4 +34,4 @@ jobs:
         with:
           artifacts:
             - crichez-secureboot-${{ env.VERSION }}.tar.gz
-          body_file: CHANGELOG.rst
+          body_file: CHANGELOG.md
