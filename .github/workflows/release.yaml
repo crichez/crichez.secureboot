@@ -1,0 +1,37 @@
+---
+name: Release
+on:
+  push:
+    tags:
+      - v*
+
+    tags-ignore:
+      - "*-alpha"
+      - "*-beta"
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install antibull-changelog
+        run: pip install ansibull-changelog
+
+      - name: Generate changelog
+        run: ansibull-changelog release
+
+      - name: Build collection tarball
+        run: ansible-galaxy collection build
+
+      - name: Get version string
+        shell: echo "VERSION=${GITHUB_REF_NAME:1}" >> "$GITHUB_ENV"
+
+      - uses: ncipollo/release-action@v1
+        with:
+          artifacts:
+            - crichez-secureboot-${{ env.VERSION }}.tar.gz
+          body_file: CHANGELOG.md
