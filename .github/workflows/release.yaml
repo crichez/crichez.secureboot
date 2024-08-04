@@ -27,6 +27,5 @@ jobs:
 
       - uses: ncipollo/release-action@v1
         with:
-          artifacts:
-            - crichez-secureboot-${{ env.VERSION }}.tar.gz
+          artifacts: crichez-secureboot-${{ env.VERSION }}.tar.gz
           body_file: CHANGELOG.md
