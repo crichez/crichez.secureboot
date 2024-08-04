@@ -1,4 +1,3 @@
----
 name: Release
 on:
   push:
@@ -14,17 +13,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install antibull-changelog
-        run: pip install ansibull-changelog
+      - name: Install antsibull-changelog
+        run: pip install antsibull-changelog
 
       - name: Generate changelog
-        run: ansibull-changelog release
+        run: antsibull-changelog release
 
       - name: Build collection tarball
         run: ansible-galaxy collection build
 
       - name: Get version string
-        shell: echo "VERSION=${GITHUB_REF_NAME:1}" >> "$GITHUB_ENV"
+        run: echo "VERSION=${GITHUB_REF_NAME:1}" >> "$GITHUB_ENV"
 
       - uses: ncipollo/release-action@v1
         with:
