@@ -65,3 +65,8 @@ argument_specs:
       uki_config_kernel_install_config_root:
         type: path
         default: /etc/kernel
+        description: |
+          The path where configuration files are stored.
+
+          This should usually be `/etc/kernel` (the default), but you may wish
+          to use `/usr/lib/kernel` instead.
