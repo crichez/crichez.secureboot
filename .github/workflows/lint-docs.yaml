@@ -8,11 +8,9 @@ on:
 
 jobs:
   build-docs:
-    name: Build Docs
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    name: Build Docs
     uses: ansible-community/github-docs-build/.github/workflows/_shared-docs-build-pr.yml@main
     with:
       init-lenient: false
