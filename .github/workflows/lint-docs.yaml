@@ -1,0 +1,35 @@
+name: build-docs
+on:
+  workflow_dispatch:
+
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-docs:
+    permissions:
+      contents: read
+    uses: ansible-community/github-docs-build/.github/workflows/_shared-docs-build-pr.yml@main
+    with:
+      init-lenient: false
+      init-fail-on-error: true
+
+  lint-docs:
+    name: Lint Docs
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install antsibull-docs
+        run: pip install antsibull-docs
+      - name: Lint Docs
+        run: |
+          antsibull-docs lint-collection-docs \
+          --plugin-docs \
+          --validate-collection-refs=all \
+          --disallow-unknown-collection-refs .
