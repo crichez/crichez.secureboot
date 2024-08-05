@@ -8,6 +8,8 @@ on:
 
 jobs:
   build-docs:
+    name: Build Docs
+    runs-on: ubuntu-latest
     permissions:
       contents: read
     name: Build Docs
@@ -17,6 +19,8 @@ jobs:
       init-fail-on-error: true
 
   lint-docs:
+    name: Lint Docs
+    runs-on: ubuntu-latest
     permissions:
       contents: read
     needs:
