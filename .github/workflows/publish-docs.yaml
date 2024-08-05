@@ -1,0 +1,35 @@
+name: publish-docs
+on:
+  push:
+    tags:
+      - v*
+
+  pull_request:
+    branches:
+      - main
+      - release/v*
+
+jobs:
+  build-docs:
+    permissions:
+      contents: read
+    name: Build Docs
+    uses: ansible-community/github-docs-build/.github/workflows/_shared-docs-build-push.yml@main
+    with:
+      init-lenient: false
+      init-fail-on-error: true
+
+  publish-docs:
+    if: github.repository == 'crichez/crichez.secureboot'
+    name: Publish Docs
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+    needs:
+      - build-docs
+    uses: ansible-community/github-docs-build/.github/workflows/_shared-docs-build-publish-gh-pages.yml@main
+    with:
+      artifact-name: ${{ needs.build-docs.outputs.artifact-name }}
+    secrets:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
