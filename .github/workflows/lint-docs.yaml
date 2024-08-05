@@ -8,14 +8,12 @@ on:
 
 jobs:
   build-docs:
-    runs-on: ubuntu-latest
     permissions:
       contents: read
-    steps:
-      - uses: ansible-community/github-docs-build/.github/workflows/_shared-docs-build-pr.yml@main
-        with:
-          init-lenient: false
-          init-fail-on-error: true
+    uses: ansible-community/github-docs-build/.github/workflows/_shared-docs-build-pr.yml@main
+    with:
+      init-lenient: false
+      init-fail-on-error: true
 
   lint-docs:
     name: Lint Docs
