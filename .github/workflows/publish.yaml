@@ -1,5 +1,4 @@
----
-name: Deploy collection to galaxy
+name: publish
 on:
   release:
     types:
@@ -10,7 +9,7 @@ jobs:
     name: Publish to Galaxy
     runs-on: ubuntu-latest
     steps:
-      - uses: checkout@v4
+      - uses: actions/checkout@v4
         with:
           ref: ${{ github.ref }}
 
@@ -18,10 +17,10 @@ jobs:
         run: ansible-galaxy collection build
 
       - name: Get expected version string
-        shell: VERSION=$(echo ${{ github.ref_name }} | sed -e 's/v\(.*\)/\1/'
+        shell: echo "VERSION={$GITHUB_REF_NAME:1}" >> "$GITHUB_ENV"
 
       - name: Publish to Galaxy
         run: |
           ansible-galaxy collection publish \
-          tofugarden-secureboot-$VERSION.tar.gz \
+          tofugarden-secureboot-${{ env.VERSION }}.tar.gz \
           --token ${{ secrets.GALAXY_API_KEY }}
