@@ -1,0 +1,300 @@
+- name: Gather keys and certificates
+  become: true
+  block:
+    - name: Gather private key
+      community.crypto.openssl_privatekey:
+        path: "{{ uki_config_mok.private_key }}"
+        size: 2048
+        mode: "{{ uki_config_mok.mode }}"
+        owner: "{{ uki_config_mok.owner }}"
+        group: "{{ uki_config_mok.group }}"
+        seuser: "{{ uki_config_mok.seuser }}"
+        serole: "{{ uki_config_mok.serole }}"
+        setype: "{{ uki_config_mok.setype }}"
+        selevel: "{{ uki_config_mok.selevel }}"
+
+    - name: Gather x509 certificate
+      community.crypto.x509_certificate:
+        path: "{{ uki_config_mok.certificate }}"
+        privatekey_path: "{{ uki_config_mok.private_key }}"
+        provider: selfsigned
+        owner: "{{ uki_config_mok.owner }}"
+        group: "{{ uki_config_mok.group }}"
+        mode: "{{ uki_config_mok.mode }}"
+        seuser: "{{ uki_config_mok.seuser }}"
+        serole: "{{ uki_config_mok.serole }}"
+        setype: "{{ uki_config_mok.setype }}"
+        selevel: "{{ uki_config_mok.selevel }}"
+
+    - name: Gather x509 certificate in DER format
+      community.crypto.x509_certificate_convert:
+        src_path: "{{ uki_config_mok.certificate }}"
+        dest_path: "{{ uki_config_mok_der_path }}"
+        format: der
+        owner: "{{ uki_config_mok.owner }}"
+        group: "{{ uki_config_mok.group }}"
+        mode: "{{ uki_config_mok.mode }}"
+        seuser: "{{ uki_config_mok.seuser }}"
+        serole: "{{ uki_config_mok.serole }}"
+        setype: "{{ uki_config_mok.setype }}"
+        selevel: "{{ uki_config_mok.selevel }}"
+
+- name: Query MOK keyring
+  become: true
+  ansible.builtin.command:
+    argv:
+      - mokutil
+      - -t
+      - "{{ uki_config_mok_der_path }}"
+  changed_when: false
+  register: test_key_request
+  failed_when:
+    - test_key_request.stdout is not ansible.builtin.match('^.*\sis\snot\senrolled$')
+    - test_key_request.stdout is not ansible.builtin.match('^.*\sis\salready\sin\sthe\senrollment\srequest$')
+    - test_key_request.stdout is not ansible.builtin.match('^.*\sis\salready\senrolled$')
+
+- name: Import new MOK
+  when: test_key_request.rc == 0
+  block:
+    - name: Get MOK password
+      register: mok_password_prompt
+      ansible.builtin.pause:
+        prompt: Enter MOK password
+        echo: false
+
+    - name: Import MOK
+      become: true
+      ansible.builtin.shell:
+        cmd: |
+          spawn /usr/bin/mokutil --import {{ uki_config_mok_der_path }}
+          expect "input password:"
+          send -- "{{ mok_password_prompt.user_input }}\n"
+          expect "input password again:"
+          send -- "{{ mok_password_prompt.user_input }}\n"
+          expect eof
+        executable: /usr/bin/expect
+      changed_when: true
+
+- name: Reboot into MokManager
+  when:
+    test_key_request.stdout is ansible.builtin.match('^.*\sis\salready\sin\sthe\senrollment\srequest$') or
+    test_key_request.rc == 0
+  block:
+    - name: MokManager warning
+      ansible.builtin.debug:
+        msg: >
+          A new Machine Owner Key (MOK) was enrolled. Before this playbook can
+          continue, the import will need to be manually validated in a program
+          called MokManager. This will happen automatically when the machine is
+          rebooted, but requires an administrator with access to a local console.
+
+          MokManager is very easy to use. Once in the menu select "Enroll MOK,"
+          enter the same password you just provided, and reboot. This playbook
+          will resume when the host is back online, or will automatically fail
+          after ten minutes. If something strange happens, just run the play
+          again.
+
+    - name: Reboot prompt
+      ansible.builtin.pause:
+        prompt: Ready to reboot? (y/n)
+        echo: true
+      register: reboot_prompt
+      changed_when: false
+      failed_when: reboot_prompt.user_input != 'y'
+
+    - name: Reboot
+      become: true
+      ansible.builtin.reboot:
+
+    - name: Verify MOK was enrolled
+      become: true
+      ansible.builtin.command:
+        argv:
+          - mokutil
+          - -t
+          - "{{ uki_config_mok_der_path }}"
+      register: validate_mok_request
+      changed_when: false
+      failed_when: validate_mok_request.rc == 0
+
+- name: Configure kernel-install to generate and sign UKIs
+  become: true
+  vars:
+    install_conf_path: "{{ uki_config_kernel_install_config_root }}/install.conf"
+    ukify_conf_path: "{{ uki_config_kernel_install_config_root }}/uki.conf"
+  block:
+    - name: Configure kernel-install to generate UKIs
+      block:
+        - name: Save the original file
+          ansible.builtin.slurp:
+            src: "{{ install_conf_path }}"
+          register: kernel_install_config_backup
+          changed_when: false
+          ignore_errors: true
+
+        - name: Set the install layout to UKI
+          community.general.ini_file:
+            path: "{{ install_conf_path }}"
+            option: layout
+            value: uki
+            mode: '0644'
+            owner: root
+            group: root
+            seuser: system_u
+            serole: object_r
+            setype: etc_t
+          register: kernel_install_layout
+
+        - name: Configure kernel-install to use the requested initrd generator
+          community.general.ini_file:
+            path: "{{ install_conf_path }}"
+            option: initrd_generator
+            value: "{{ uki_config_initrd_generator }}"
+            mode: '0644'
+            owner: root
+            group: root
+            seuser: system_u
+            serole: object_r
+            setype: etc_t
+          register: kernel_install_initrd_generator
+
+        - name: Configure kernel-install to use the requested UKI generator
+          community.general.ini_file:
+            path: "{{ install_conf_path }}"
+            option: uki_generator
+            value: ukify
+            mode: '0644'
+            owner: root
+            group: root
+            seuser: system_u
+            serole: object_r
+            setype: etc_t
+          register: kernel_install_uki_generator
+
+    - name: Configure ukify to sign generated UKIs
+      block:
+        - name: Save original file
+          ansible.builtin.slurp:
+            src: "{{ ukify_conf_path }}"
+          register: ukify_config_backup
+          changed_when: false
+          ignore_errors: true
+
+        - name: Set singing tool
+          community.general.ini_file:
+            path: "{{ ukify_conf_path }}"
+            section: UKI
+            option: SecureBootSigningTool
+            value: sbsign
+            mode: '0644'
+            owner: root
+            group: root
+            seuser: system_u
+            serole: object_r
+            setype: etc_t
+          register: ukify_signing_tool
+
+        - name: Set kernel command line
+          community.general.ini_file:
+            path: "{{ ukify_conf_path }}"
+            section: UKI
+            option: Cmdline
+            value: "@{{ uki_config_cmdline }}"
+            mode: '0644'
+            owner: root
+            group: root
+            seuser: system_u
+            serole: object_r
+            setype: etc_t
+          register: ukify_kernel_command_line
+
+        - name: Set signing private key
+          community.general.ini_file:
+            path: "{{ ukify_conf_path }}"
+            section: UKI
+            option: SecureBootPrivateKey
+            value: "{{ uki_config_mok.private_key }}"
+            mode: '0644'
+            owner: root
+            group: root
+            seuser: system_u
+            serole: object_r
+            setype: etc_t
+          register: ukify_singing_private_key
+
+        - name: Set signing certificate
+          community.general.ini_file:
+            path: "{{ ukify_conf_path }}"
+            section: UKI
+            option: SecureBootCertificate
+            value: "{{ uki_config_mok.certificate }}"
+            mode: '0644'
+            owner: root
+            group: root
+            seuser: system_u
+            serole: object_r
+            setype: etc_t
+          register: ukify_signing_certificate
+
+    - name: Rebuild UKI
+      when:
+        kernel_install_layout is changed or
+        kernel_install_initrd_generator is changed or
+        kernel_install_uki_generator is changed or
+        (ukify_signing_tool is defined and ukify_signing_tool is changed) or
+        (ukify_signing_private_key is defined and ukify_signing_private_key is changed) or
+        (ukify_signing_certificate is defined and ukify_signing_certificate is changed) or
+        (ukify_kernel_command_line is defined and ukify_kernel_command_line is changed)
+      ansible.builtin.command:
+        argv:
+          - kernel-install
+          - --verbose
+          - add
+      changed_when: true
+
+  rescue:
+    - name: Restore ukify config
+      block:
+        - name: Restore ukify configuration file
+          when:
+            - ukify_config_backup is not failed
+            - ukify_config_backup is not skipped
+          ansible.builtin.copy:
+            content: "{{ ukify_config_backup.content | b64decode }}"
+            dest: "{{ ukify_conf_path }}"
+            owner: root
+            group: root
+            mode: "0644"
+            seuser: system_u
+            serole: object_r
+            setype: etc_t
+          changed_when: false
+
+        - name: Delete new ukify configuration file
+          when: ukify_config_backup is failed
+          ansible.builtin.file:
+            path: "{{ ukify_conf_path }}"
+            state: absent
+          changed_when: false
+
+    - name: Restore kernel-install config
+      block:
+        - name: Restore original kernel-install configuration file
+          when: kernel_install_config_backup is not failed
+          ansible.builtin.copy:
+            content: "{{ kernel_install_config_backup.content | b64decode }}"
+            dest: "{{ install_conf_path }}"
+            owner: root
+            group: root
+            mode: "0644"
+            seuser: system_u
+            serole: object_r
+            setype: etc_t
+          changed_when: false
+
+        - name: Remove new kernel-install configuration file
+          when: kernel_install_config_backup is failed
+          ansible.builtin.file:
+            path: "{{ install_conf_path }}"
+            state: absent
+          changed_when: false

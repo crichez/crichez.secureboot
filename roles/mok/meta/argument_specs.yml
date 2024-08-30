@@ -1,0 +1,61 @@
+---
+argument_specs:
+  main:
+    short_description: Machine owner key enrollment
+    description: Declare the desired state of shim's trust database
+    version_added: "1.0.0"
+    author: Christopher Palmer-Richez
+    options:
+      mok_certificate:
+        type: dict
+        description: The details of the machine owner key certificate.
+        required: true
+        options:
+          path:
+            type: path
+            description: The path to the machine owner key certificate.
+            required: true
+
+          owner:
+            type: str
+            description: The owner of the machine owner key certificate.
+            required: true
+
+          group:
+            type: str
+            description: The group that owns the machine owner key certificate.
+            required: true
+
+          mode:
+            type: str
+            description: The `chmod` mode of the certificate file.
+
+      mok_private_key:
+        type: dict
+        description: The details of the machine owner key.
+        required: true
+        options:
+          path:
+            type: path
+            description: The path to the machine owner key.
+            required: true
+
+          owner:
+            type: str
+            description: The owner of the machine owner key.
+            required: true
+
+          group:
+            type: str
+            description: The group that owns the machine owner key.
+            required: true
+
+          mode:
+            type: str
+            description: The `chmod` mode of the private key file.
+
+      mok_state:
+        type: str
+        description: Must be 'trusted'.
+        choices:
+          - trusted

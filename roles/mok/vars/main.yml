@@ -1,0 +1,6 @@
+---
+mok_enrolled_regex: '^.*\sis\salready\senrolled$'
+mok_not_enrolled_regex: '^.*\sis\snot\senrolled$'
+mok_already_req_regex: '^.*\sis\salready\sin\sthe\senrollment\srequest$'
+mok_become_pk: "{{ mok_private_key.owner is not ansible.builtin.match(remote_user) }}"  # noqa: yaml[line-length]
+mok_become_cert: "{{ mok_certificate owner is not ansible.builtin.match(remote_user) }}"  # noqa: yaml[line-length]

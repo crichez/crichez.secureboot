@@ -1,0 +1,5 @@
+---
+- name: Install expect
+  become: true
+  ansible.builtin.package:
+    name: expect

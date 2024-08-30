@@ -1,0 +1,62 @@
+---
+- name: Ensure the key file is absent
+  ansible.builtin.file:
+    path: "{{ mok_private_key.path }}"
+    state: absent
+
+- name: Ensure the certificate file is absent
+  ansible.builtin.file:
+    path: "{{ mok_certificate.path }}"
+    state: absent
+
+- name: Include the full role
+  include_role:
+    - name: mok
+  register: role_output
+
+- name: Ensure the role reports a change
+  ansible.builtin.meta:
+    command: noop
+  changed_when: false
+  failed_when: role_output.changed is False
+
+- name: Check the validity of the private key
+  check_mode: true
+  community.crypto.openssl_privatekey:
+    path: "{{ mok_private_key.path }}"
+    type: RSA
+    size: 2048
+    owner: "{{ mok_private_key.owner }}"
+    group: "{{ mok_private_key.group }}"
+    mode: "{{ mok_private_key.mode }}"
+  register: key_check
+  failed_when: key_check is changed
+
+- name: Check the validity of the certificate
+  check_mode: true
+  community.crypto.x509_certificate:
+    path: "{{ mok_certificate.path }}"
+    privatekey_path: "{{ mok_private_key.path }}"
+    provider: selfsigned
+    owner: "{{ mok_certificate.owner }}"
+    group: "{{ mok_certificate.group }}"
+    mode: "{{ mok_certificate.mode }}"
+  register: cert_check
+  failed_when: cert_check is changed
+
+- name: Check the enrollment status of the certificate
+  ansible.builtin.command:
+    argv:
+      - mokutil
+      - -t
+      - "{{ mok_certificate.path }}"
+  register: mok_check
+  changed_when: false
+  failed_when:
+    - mok_check.stdout is not ansible.builtin.match(mok_enrolled_regex)
+
+- name: Run the role again and look for no changes
+  include_role:
+    - name: mok
+  register: rerun_output
+  failed_when: rerun_output is changed

@@ -1,0 +1,14 @@
+---
+mok_certificate:
+  path: /etc/kernel/mok.pem
+  owner: root
+  group: root
+  mode: "0644"
+
+mok_private_key:
+  path: /etc/kernel/mok.priv
+  owner: root
+  group: root
+  mode: "0600"
+
+mok_state: enrolled
