@@ -1,6 +1,6 @@
 # crichez.secureboot
 
-This repository contains an Ansible roles to configure secure boot. 
+This repository contains Ansible roles to configure secure boot. 
 
 ## Overview
 
