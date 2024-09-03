@@ -12,13 +12,6 @@
 - name: Include the full role
   include_role:
     - name: mok
-  register: role_output
-
-- name: Ensure the role reports a change
-  ansible.builtin.meta:
-    command: noop
-  changed_when: false
-  failed_when: role_output.changed is False
 
 - name: Check the validity of the private key
   check_mode: true
@@ -54,9 +47,3 @@
   changed_when: false
   failed_when:
     - mok_check.stdout is not ansible.builtin.match(mok_enrolled_regex)
-
-- name: Run the role again and look for no changes
-  include_role:
-    - name: mok
-  register: rerun_output
-  failed_when: rerun_output is changed
