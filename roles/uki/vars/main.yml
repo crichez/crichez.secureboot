@@ -1,0 +1,12 @@
+---
+uki_privatekey:
+  path: /etc/kernel/mok.priv
+  owner: root
+  group: root
+  mode: "0600"
+
+uki_certificate:
+  path: /etc/kernel/mok.pem
+  owner: root
+  group: root
+  mode: "0644"

@@ -1,0 +1,285 @@
+---
+- name: Mok certificate is enrolled
+  when: uki_certificate is defined
+  vars:
+    der_path: "{{ 0 | splitext(uki_certificate.path) }}.der"
+    enrolled_regex: '^.*\sis\salready\senrolled$'
+  block:
+    - name: Get a DER-encoded certificate
+      community.crypto.x509_certificate_convert:
+        src_path: "{{ uki_certificate.path }}"
+        dest_path: "{{ der_path }}"
+        format: der
+        owner: "{{ uki_certificate.owner }}"
+        group: "{{ uki_certificate.group }}"
+        mode: "{{ uki_certificate.mode }}"
+        setype: "cert_t"
+
+    - name: Check its enrollment status
+      ansible.builtin.command:
+        argv:
+          - mokutil
+          - -t
+          - "{{ der_path }}"
+      register: mok_test
+      changed_when: false
+      failed_when: mok_test is not ansible.builtin.match(enrolled_regex)
+
+- name: Set configuration and build UKI
+  vars:
+    install_conf_path: /etc/kernel/install.conf
+    uki_conf_path: /etc/kernel/install.conf
+    pem_path: "{{ 0 | splitext(uki_certificate) }}.pem"
+    install_script_path: /etc/kernel/install.d/99-uki-uefi-setup.install
+    boot_svc_name: kernel-bootcfg-boot-successful.service
+    boot_svc_path: /etc/systemd/system/{{ boot_svc_name }}
+  block:
+    - name: Back up install.conf
+      ansible.builtin.slurp:
+        src: "{{ install_conf_path }}"
+      register: install_conf_backup
+      changed_when: false
+      ignore_errors: true
+
+    - name: Layout is uki
+      community.general.ini_file:
+        path: "{{ install_conf_path }}"
+        option: layout
+        value: uki
+        owner: root
+        group: root
+        mode: "0644"
+        setype: etc_t
+      register: layout
+
+    - name: Uki_generator is ukify
+      community.general.ini_file:
+        path: "{{ install_conf_path }}"
+        option: uki_generator
+        value: ukify
+        owner: root
+        group: root
+        mode: "0644"
+        setype: etc_t
+      register: uki_generator
+
+    - name: Back up uki.conf
+      ansible.builtin.slurp:
+        src: "{{ uki_conf_path }}"
+      register: uki_conf_backup
+      changed_when: false
+      ignore_errors: true
+
+    - name: Get a PEM certificate
+      community.crypto.x509_certificate_convert:
+        src_path: "{{ uki_certificate }}"
+        dest_path: "{{ pem_path }}"
+        format: pem
+        owner: "{{ uki_certificate.owner }}"
+        group: "{{ uki_certificate.group }}"
+        mode: "{{ uki_certificate.mode }}"
+        setype: cert_t
+
+    - name: Set signing tool
+      community.general.ini_file:
+        path: "{{ uki_conf_path }}"
+        section: UKI
+        option: SecureBootSigningTool
+        value: sbsign
+        owner: root
+        group: root
+        mode: "0644"
+        setype: etc_t
+      register: signing_tool
+
+    - name: Set signing key
+      community.general.ini_file:
+        path: "{{ uki_conf_path }}"
+        section: UKI
+        option: SecureBootPrivateKey
+        value: "{{ uki_privatekey.path }}"
+        owner: root
+        group: root
+        mode: "0644"
+        setype: etc_t
+      register: private_key
+
+    - name: Set siging certificate
+      community.general.ini_file:
+        path: "{{ uki_conf_path }}"
+        section: UKI
+        option: SecureBootCertificate
+        value: "{{ pem_path }}"
+        owner: root
+        group: root
+        mode: "0644"
+        setype: etc_t
+
+    - name: Install pip
+      ansible.builtin.package:
+        name: python3-pip
+
+    - name: Install virt-firmware
+      ansible.builtin.pip:
+        name: virt-firmware
+        version: "24.7"
+
+    - name: Get a temporary directory
+      ansible.builtin.tempfile:
+        suffix: crichez.secureboot.uki
+        state: directory
+      delegate_to: localhost
+      register: clone_dir
+
+    - name: Clone virt-firwmare
+      ansible.builtin.git:
+        repo: https://gitlab.com/kraxel/virt-firmware
+        dest: "{{ clone_dir.path }}"
+        version: v24.7
+      delegate_to: localhost
+
+    - name: Backup kernel-install script
+      ansible.builtin.slurp:
+        src: "{{ install_script_path }}"
+      register: install_script_backup
+      changed_when: false
+      ignore_errors: true
+
+    - name: Copy new kernel-install script
+      ansible.builtin.copy:
+        src: "{{ clone_dir.path }}/systemd/99-uki-uefi-setup.install"
+        dest: "{{ install_script_path }}"
+        owner: root
+        group: root
+        mode: "0744"
+        setype: etc_t
+
+    - name: Backup boot validation service
+      ansible.builtin.slurp:
+        src: "{{ boot_svc_path }}"
+      register: boot_svc_backup
+      changed_when: false
+      ignore_errors: true
+
+    - name: Copy boot validation service
+      ansible.builtin.copy:
+        src: "{{ clone_dir.path }}/systemd/{{ boot_svc_name }}"
+        dest: "{{ boot_svc_path }}"
+        owner: root
+        group: root
+        mode: "0644"
+        setype: systemd_unit_file_t
+
+    - name: Enable boot validation service
+      ansible.builtin.systemd_service:
+        daemon_reload: true
+        name: kernel-bootcfg-boot-successful
+        enabled: true
+
+    - name: Rebuild UKI
+      when:
+        layout is changed or
+        uki_generator is changed or
+        signing_tool is changed or
+        private_key is changed or
+        certificate is changed
+      ansible.builtin.command:
+        argv:
+          - kernel-install
+          - --verbose
+          - add
+      changed_when: true
+
+    - name: Reboot
+      ansible.builtin.reboot:
+        reboot_timeout: 240
+
+  rescue:
+    - name: Restore install.conf
+      when:
+        - install_conf_backup is defined
+        - install_conf_backup is not failed
+      ansible.builtin.copy:
+        content: "{{ install_conf_backup.content | b64decode }}"
+        dest: "{{ install_conf_path }}"
+        owner: root
+        group: root
+        mode: "0644"
+        setype: etc_t
+
+    - name: Remove install.conf
+      when:
+        - install_conf_backup is failed
+        - install_conf_backup is defined
+      ansible.builtin.file:
+        path: "{{ install_conf_path }}"
+        state: absent
+
+    - name: Restore uki.conf
+      when:
+        - uki_conf_backup is defined
+        - uki_conf_backup is not failed
+      ansible.builtin.copy:
+        content: "{{ uki_conf_backup.content | b64decode }}"
+        dest: "{{ uki_conf_path }}"
+        owner: root
+        group: root
+        mode: "0644"
+        setype: etc_t
+
+    - name: Remove uki.conf
+      when:
+        - uki_conf_backup is defined
+        - uki_conf_backup is failed
+      ansible.builtin.file:
+        path: "{{ uki_conf_path }}"
+        state: absent
+
+    - name: Restore boot validation service
+      when:
+        - boot_svc_backup is defined
+        - boot_svc_backup is not failed
+      ansible.builtin.copy:
+        content: "{{ boot_svc_backup.content | b64decode }}"
+        dest: "{{ boot_svc_path }}"
+        owner: root
+        group: root
+        mode: "0644"
+        setype: systemd_unit_file_t
+
+    - name: Enable restored boot validation service
+      when:
+        - boot_svc_backup is defined
+        - boot_svc_backup is not failed
+      ansible.builtin.systemd_service:
+        daemon_reload: true
+        enabled: true
+        name: kernel-bootcfg-boot-successful
+
+    - name: Remove boot validation service
+      when:
+        - boot_svc_backup is defined
+        - boot_svc_backup is failed
+      ansible.builtin.file:
+        path: "{{ boot_svc_path }}"
+        state: absent
+
+    - name: Restore kernel install script
+      when:
+        - install_script_backup is defined
+        - install_script_backup is not failed
+      ansible.builtin.copy:
+        content: "{{ install_script_backup.content | b64decode }}"
+        dest: "{{ install_script_path }}"
+        owner: root
+        group: root
+        mode: "0744"
+        setype: etc_t
+
+    - name: Remove kernel install script
+      when:
+        - install_script_backup is defined
+        - install_script_backup is failed
+      ansible.builtin.file:
+        path: "{{ install_script_path }}"
+        state: absent

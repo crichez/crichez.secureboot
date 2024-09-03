@@ -1,0 +1,73 @@
+---
+argument_specs:
+  main:
+    short_description: Boot from signed UKIs
+    description: |
+      The `uki` role configures kernel-install to build unified kernel images
+      using systemd's `ukify`, and signs them using the provided key and
+      certificate. The certificate in question must already be enrolled in
+      shim.
+    version_added: "1.0.0"
+    author: Christopher Palmer-Richez <tofu.github@chorky.net> @crichez
+    options:
+      uki_privatekey:
+        type: dict
+        description: |
+          A dictionary that describes the location and permissions of the secure
+          boot signing private key file.
+        default:
+          path: /etc/kernel/mok.priv
+          owner: root
+          group: root
+          mode: "0600"
+        options:
+          path:
+            type: path
+            description: The path to a PEM-encoded private key.
+            default: /etc/kernel/mok.priv
+
+          owner:
+            type: str
+            description: The owner of the private key file.
+            default: root
+
+          group:
+            type: str
+            description: The group that owns the private key file.
+            default: root
+
+          mode:
+            type: str
+            description: The permissions of the private key file.
+            default: "0600"
+
+      uki_certificate:
+        type: dict
+        description: |
+          A dictionary that describes the location and permissions of the secure
+          boot signing certificate file.
+        default:
+          path: /etc/kernel/mok.pem
+          owner: root
+          group: root
+          mode: "0644"
+        options:
+          path:
+            type: path
+            description: The path to a PEM-encoded certificate.
+            default: /etc/kernel/mok.pem
+
+          owner:
+            type: str
+            description: The owner of the certificate file.
+            default: root
+
+          group:
+            type: str
+            description: The group that owns the certificate file.
+            default: root
+
+          mode:
+            type: str
+            description: The permissions of the certificate file.
+            default: "0644"
